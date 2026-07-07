@@ -77,17 +77,13 @@ function CartPanel() {
       return
     }
 
-    const order = createTemporaryOrder({
+    createTemporaryOrder({
       subtotal,
       tax,
       total,
       cashPaid: paymentMethod === 'Tunai' ? cashPaidNumber : total,
       change: paymentMethod === 'Tunai' ? change : 0,
     })
-
-    alert(
-      `Order berhasil dibuat!\nNomor antrian: ${order.queueCode}\nMetode bayar: ${order.paymentMethod}\nTotal: ${formatCurrency(order.total)}`
-    )
   }
 
   return (

@@ -14,6 +14,7 @@ export const usePosStore = create((set, get) => ({
 
   nextQueueNumber: 1,
   lastOrder: null,
+  receiptOpen: false,
 
   setOrderType: (orderType) =>
     set({
@@ -39,6 +40,8 @@ export const usePosStore = create((set, get) => ({
     }),
 
   setCashPaid: (cashPaid) => set({ cashPaid }),
+
+  closeReceipt: () => set({ receiptOpen: false }),
 
   addToCart: (product, options) =>
     set((state) => {
@@ -145,6 +148,7 @@ export const usePosStore = create((set, get) => ({
 
     set({
       lastOrder: newOrder,
+      receiptOpen: true,
       nextQueueNumber: state.nextQueueNumber + 1,
       cart: [],
       tableNumber: '',

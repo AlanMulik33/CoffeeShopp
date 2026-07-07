@@ -3,6 +3,7 @@ import { products } from './data/products'
 import ProductCard from './components/ProductCard'
 import CartPanel from './components/CartPanel'
 import ProductOptionModal from './components/ProductOptionModal'
+import ReceiptModal from './components/ReceiptModal'
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('Semua')
@@ -115,6 +116,8 @@ function App() {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
       />
+
+      <ReceiptModal />
     </>
   )
 }
