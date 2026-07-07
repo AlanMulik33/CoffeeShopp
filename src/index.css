@@ -179,3 +179,11 @@ html[data-theme='dark'] .bg-yellow-50 {
 html[data-theme='dark'] .text-yellow-600 {
   color: #facc15 !important;
 }
+
+html[data-theme='dark'] .bg-green-50 {
+  background-color: rgba(20, 83, 45, 0.35) !important;
+}
+
+html[data-theme='dark'] .text-green-700 {
+  color: #86efac !important;
+}

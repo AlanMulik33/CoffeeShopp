@@ -86,6 +86,16 @@ function ProductOptionModal({ product, editingItem, onClose }) {
   }
 
   const handleSubmit = () => {
+    if (!product.isAvailable) {
+      addToast({
+        title: 'Produk habis',
+        message: `${product.name} sedang tidak tersedia.`,
+        type: 'warning',
+      })
+
+      onClose()
+      return
+    }
     const payload = {
       size: selectedSize,
       temperature: selectedTemperature,
