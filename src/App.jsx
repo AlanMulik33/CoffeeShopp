@@ -14,6 +14,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('Semua')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [editingItem, setEditingItem] = useState(null)
 
   const cart = usePosStore((state) => state.cart)
   const receiptOpen = usePosStore((state) => state.receiptOpen)
@@ -42,6 +43,27 @@ function App() {
     return matchCategory && matchSearch
   })
 
+  const handleSelectProduct = (product) => {
+    setEditingItem(null)
+    setSelectedProduct(product)
+  }
+
+  const handleEditItem = (item) => {
+    const product = products.find((product) => product.id === item.productId)
+
+    if (!product) {
+      return
+    }
+
+    setEditingItem(item)
+    setSelectedProduct(product)
+  }
+
+  const closeProductModal = () => {
+    setSelectedProduct(null)
+    setEditingItem(null)
+  }
+
   useEffect(() => {
     const handleKeyboardShortcut = (event) => {
       const activeElement = document.activeElement
@@ -69,7 +91,7 @@ function App() {
 
       if (event.key === 'Escape') {
         if (selectedProduct) {
-          setSelectedProduct(null)
+          closeProductModal()
           return
         }
 
@@ -229,11 +251,11 @@ function App() {
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onSelect={setSelectedProduct}
-                    />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onSelect={handleSelectProduct}
+                  />
                   ))}
                 </div>
               )}
@@ -241,14 +263,15 @@ function App() {
           </section>
 
           <section className="lg:w-[460px] lg:min-h-0">
-            <CartPanel />
+            <CartPanel onEditItem={handleEditItem} />
           </section>
         </div>
       </main>
 
       <ProductOptionModal
         product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+        editingItem={editingItem}
+        onClose={closeProductModal}
       />
 
       <ReceiptModal />

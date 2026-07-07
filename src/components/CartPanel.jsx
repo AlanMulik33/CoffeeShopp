@@ -8,7 +8,7 @@ import {
 
 const paymentMethods = ['Tunai', 'QRIS', 'Kartu', 'GoPay', 'OVO', 'Dana']
 
-function CartPanel() {
+function CartPanel({ onEditItem }) {
   const cart = usePosStore((state) => state.cart)
 
   const orderType = usePosStore((state) => state.orderType)
@@ -49,6 +49,25 @@ function CartPanel() {
   const createTemporaryOrder = usePosStore((state) => state.createTemporaryOrder)
   const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
   const addToast = usePosStore((state) => state.addToast)
+
+  const handleRemoveItem = (item) => {
+    openConfirmDialog({
+      title: 'Hapus item?',
+      message: `${item.name} akan dihapus dari keranjang.`,
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: () => {
+        removeFromCart(item.cartKey)
+
+        addToast({
+          title: 'Item dihapus',
+          message: `${item.name} berhasil dihapus dari keranjang.`,
+          type: 'warning',
+        })
+      },
+    })
+  }
 
   const handleClearCart = () => {
     openConfirmDialog({
@@ -513,8 +532,15 @@ function CartPanel() {
                   </div>
 
                   <button
-                    onClick={() => removeFromCart(item.cartKey)}
-                    className="shrink-0 rounded-full px-3 py-1 text-sm font-bold text-red-500 hover:bg-red-50"
+                    onClick={() => onEditItem(item)}
+                    className="rounded-full px-3 py-1 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleRemoveItem(item)}
+                    className="rounded-full px-3 py-1 text-sm font-bold text-red-500 hover:bg-red-50"
                   >
                     Hapus
                   </button>

@@ -232,6 +232,62 @@ export const usePosStore = create((set, get) => ({
       }
     }),
 
+  updateCartItem: (oldCartKey, product, options) =>
+    set((state) => {
+      const addOnKey =
+        options.addOns
+          ?.map((addOn) => addOn.name)
+          .sort()
+          .join('|') || 'none'
+
+      const noteKey = options.note?.trim().toLowerCase() || 'none'
+
+      const newCartKey = [
+        product.id,
+        options.size || 'none',
+        options.temperature || 'none',
+        options.sugar || 'none',
+        options.ice || 'none',
+        addOnKey,
+        noteKey,
+      ].join('-')
+
+      const updatedItem = {
+        cartKey: newCartKey,
+        productId: product.id,
+        name: product.name,
+        category: product.category,
+        image: product.image,
+        basePrice: product.price,
+        price: options.finalPrice,
+        size: options.size,
+        temperature: options.temperature,
+        sugar: options.sugar,
+        ice: options.ice,
+        addOns: options.addOns,
+        note: options.note,
+        quantity: options.quantity,
+      }
+
+      const otherItems = state.cart.filter((item) => item.cartKey !== oldCartKey)
+
+      const sameItem = otherItems.find((item) => item.cartKey === newCartKey)
+
+      if (sameItem) {
+        return {
+          cart: otherItems.map((item) =>
+            item.cartKey === newCartKey
+              ? { ...item, quantity: item.quantity + options.quantity }
+              : item
+          ),
+        }
+      }
+
+      return {
+        cart: [...otherItems, updatedItem],
+      }
+    }),  
+
   increaseQuantity: (cartKey) =>
     set((state) => ({
       cart: state.cart.map((item) =>

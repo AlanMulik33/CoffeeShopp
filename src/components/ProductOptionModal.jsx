@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePosStore } from '../store/posStore'
 
-function ProductOptionModal({ product, onClose }) {
+function ProductOptionModal({ product, editingItem, onClose }) {
   const addToCart = usePosStore((state) => state.addToCart)
+  const updateCartItem = usePosStore((state) => state.updateCartItem)
   const addToast = usePosStore((state) => state.addToast)
 
   const [selectedSize, setSelectedSize] = useState('')
@@ -14,16 +15,31 @@ function ProductOptionModal({ product, onClose }) {
   const [note, setNote] = useState('')
 
   useEffect(() => {
-    if (product) {
-      setSelectedSize(product.sizeOptions?.[0]?.name || '')
-      setSelectedTemperature(product.temperatureOptions?.[0] || '')
-      setSelectedSugar(product.sugarOptions?.[0] || '')
-      setSelectedIce(product.iceOptions?.[0] || '')
-      setSelectedAddOns([])
-      setQuantity(1)
-      setNote('')
+    if (!product) {
+      return
     }
-  }, [product])
+
+    if (editingItem) {
+      setSelectedSize(editingItem.size || product.sizeOptions?.[0]?.name || '')
+      setSelectedTemperature(
+        editingItem.temperature || product.temperatureOptions?.[0] || ''
+      )
+      setSelectedSugar(editingItem.sugar || product.sugarOptions?.[0] || '')
+      setSelectedIce(editingItem.ice || product.iceOptions?.[0] || '')
+      setSelectedAddOns(editingItem.addOns || [])
+      setQuantity(editingItem.quantity || 1)
+      setNote(editingItem.note || '')
+      return
+    }
+
+    setSelectedSize(product.sizeOptions?.[0]?.name || '')
+    setSelectedTemperature(product.temperatureOptions?.[0] || '')
+    setSelectedSugar(product.sugarOptions?.[0] || '')
+    setSelectedIce(product.iceOptions?.[0] || '')
+    setSelectedAddOns([])
+    setQuantity(1)
+    setNote('')
+  }, [product, editingItem])
 
   const selectedSizeData = useMemo(() => {
     return product?.sizeOptions?.find((size) => size.name === selectedSize)
@@ -69,8 +85,8 @@ function ProductOptionModal({ product, onClose }) {
     }
   }
 
-  const handleAddToCart = () => {
-    addToCart(product, {
+  const handleSubmit = () => {
+    const payload = {
       size: selectedSize,
       temperature: selectedTemperature,
       sugar: selectedSugar,
@@ -79,7 +95,22 @@ function ProductOptionModal({ product, onClose }) {
       note: note.trim(),
       quantity,
       finalPrice,
-    })
+    }
+
+    if (editingItem) {
+      updateCartItem(editingItem.cartKey, product, payload)
+
+      addToast({
+        title: 'Item diperbarui',
+        message: `${product.name} berhasil diperbarui di keranjang.`,
+        type: 'success',
+      })
+
+      onClose()
+      return
+    }
+
+    addToCart(product, payload)
 
     addToast({
       title: 'Item ditambahkan',
@@ -91,17 +122,19 @@ function ProductOptionModal({ product, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-[#fffaf3] shadow-2xl">
         <div className="border-b border-[#ead8c0] p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-bold uppercase tracking-widest text-[#b88746]">
-                Customize Order
+                {editingItem ? 'Edit Order' : 'Customize Order'}
               </p>
+
               <h2 className="mt-1 text-3xl font-black text-[#2d1810]">
                 {product.name}
               </h2>
+
               <p className="mt-2 text-sm text-[#7b5d4a]">
                 {product.description}
               </p>
@@ -132,6 +165,7 @@ function ProductOptionModal({ product, onClose }) {
                   }`}
                 >
                   <span className="block">{size.name}</span>
+
                   {size.additionalPrice > 0 && (
                     <span className="mt-1 block text-xs opacity-80">
                       +{formatCurrency(size.additionalPrice)}
@@ -313,10 +347,10 @@ function ProductOptionModal({ product, onClose }) {
           </button>
 
           <button
-            onClick={handleAddToCart}
+            onClick={handleSubmit}
             className="flex-1 rounded-2xl bg-[#6f3f24] px-5 py-4 font-bold text-white hover:bg-[#4b2818]"
           >
-            Tambahkan
+            {editingItem ? 'Simpan Perubahan' : 'Tambahkan'}
           </button>
         </div>
       </div>
