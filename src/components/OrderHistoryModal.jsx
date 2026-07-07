@@ -13,6 +13,9 @@ function OrderHistoryModal() {
   const showReceiptFromHistory = usePosStore(
     (state) => state.showReceiptFromHistory
   )
+  const cancelOrder = usePosStore((state) => state.cancelOrder)
+  const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
+  const addToast = usePosStore((state) => state.addToast)
 
   if (!historyOpen) {
     return null
@@ -25,6 +28,31 @@ function OrderHistoryModal() {
       minimumFractionDigits: 0,
     }).format(value)
   }
+
+  const getOrderKey = (order) => {
+    return order.orderId || order.queueCode
+    }
+
+  const handleCancelOrder = (order) => {
+    openConfirmDialog({
+        title: `Batalkan order ${order.queueCode}?`,
+        message:
+        'Order akan diberi status Cancelled. Data transaksi tetap tersimpan di riwayat.',
+        confirmText: 'Batalkan Order',
+        cancelText: 'Kembali',
+        variant: 'danger',
+        onConfirm: () => {
+        cancelOrder(getOrderKey(order))
+
+        addToast({
+            title: 'Order dibatalkan',
+            message: `${order.queueCode} berhasil dibatalkan.`,
+            type: 'warning',
+        })
+        },
+    })
+    }
+   
 
   const filteredOrders = filterOrdersByDate(
     orderHistory,
@@ -260,12 +288,23 @@ function OrderHistoryModal() {
                         {formatCurrency(order.total)}
                       </p>
 
-                      <button
-                        onClick={() => showReceiptFromHistory(order)}
-                        className="mt-3 rounded-2xl bg-[#6f3f24] px-5 py-3 text-sm font-bold text-white hover:bg-[#4b2818]"
-                      >
-                        Lihat Struk
-                      </button>
+                    <div className="mt-3 flex flex-col gap-2">
+                        <button
+                            onClick={() => showReceiptFromHistory(order)}
+                            className="rounded-2xl bg-[#6f3f24] px-5 py-3 text-sm font-bold text-white hover:bg-[#4b2818]"
+                        >
+                            Lihat Struk
+                        </button>
+
+                        {order.status !== 'Completed' && order.status !== 'Cancelled' && (
+                            <button
+                            onClick={() => handleCancelOrder(order)}
+                            className="rounded-2xl border border-red-200 px-5 py-3 text-sm font-bold text-red-500 hover:bg-red-50"
+                            >
+                            Batalkan
+                            </button>
+                        )}
+                    </div>
                     </div>
                   </div>
 

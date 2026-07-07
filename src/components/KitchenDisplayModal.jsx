@@ -24,15 +24,22 @@ function KitchenDisplayModal() {
   const kitchenOpen = usePosStore((state) => state.kitchenOpen)
   const closeKitchen = usePosStore((state) => state.closeKitchen)
   const updateOrderStatus = usePosStore((state) => state.updateOrderStatus)
+  const cancelOrder = usePosStore((state) => state.cancelOrder)
+  const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
   const addToast = usePosStore((state) => state.addToast)
 
   const kitchenData = useMemo(() => {
     const activeOrders = orderHistory.filter((order) => {
-      return order.status !== 'Completed'
+    const status = order.status || 'New'
+    return status !== 'Completed' && status !== 'Cancelled'
     })
 
     const completedOrders = orderHistory.filter((order) => {
-      return order.status === 'Completed'
+    return order.status === 'Completed'
+    })
+
+    const cancelledOrders = orderHistory.filter((order) => {
+    return order.status === 'Cancelled'
     })
 
     const groupedOrders = statusColumns.map((column) => ({
@@ -44,9 +51,10 @@ function KitchenDisplayModal() {
     }))
 
     return {
-      activeOrders,
-      completedOrders,
-      groupedOrders,
+        activeOrders,
+        completedOrders,
+        cancelledOrders,
+        groupedOrders,
     }
   }, [orderHistory])
 
@@ -69,6 +77,28 @@ function KitchenDisplayModal() {
       type: 'success',
     })
   }
+
+  const handleCancelOrder = (order) => {
+    const orderId = getOrderKey(order)
+
+    openConfirmDialog({
+        title: `Batalkan order ${order.queueCode}?`,
+        message:
+        'Order yang dibatalkan tidak akan muncul lagi di antrean barista, tetapi tetap tersimpan di riwayat transaksi.',
+        confirmText: 'Batalkan Order',
+        cancelText: 'Kembali',
+        variant: 'danger',
+        onConfirm: () => {
+        cancelOrder(orderId)
+
+        addToast({
+            title: 'Order dibatalkan',
+            message: `${order.queueCode} berhasil dibatalkan.`,
+            type: 'warning',
+        })
+        },
+    })
+    }
 
   const getNextAction = (status) => {
     if (!status || status === 'New') {
@@ -136,7 +166,7 @@ function KitchenDisplayModal() {
         </div>
 
         <div className="coffee-scrollbar max-h-[74vh] overflow-y-auto p-6">
-          <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-4">
             <div className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
               <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
                 Order Aktif
@@ -167,6 +197,15 @@ function KitchenDisplayModal() {
                 {kitchenData.completedOrders.length}
               </p>
             </div>
+          </div>
+
+          <div className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                Dibatalkan
+            </p>
+            <p className="mt-2 text-4xl font-black text-red-500">
+                {kitchenData.cancelledOrders.length}
+            </p>
           </div>
 
           {kitchenData.activeOrders.length === 0 ? (
@@ -284,28 +323,33 @@ function KitchenDisplayModal() {
                               ))}
                             </div>
 
-                            <div className="mt-5 flex gap-3">
-                              {action && (
-                                <button
-                                  onClick={() =>
-                                    handleStatusChange(order, action.nextStatus)
-                                  }
-                                  className="flex-1 rounded-2xl bg-[#6f3f24] px-4 py-3 text-sm font-bold text-white hover:bg-[#4b2818]"
-                                >
-                                  {action.label}
-                                </button>
-                              )}
+                            <div className="mt-5 grid grid-cols-1 gap-3">
+                                {action && (
+                                    <button
+                                    onClick={() => handleStatusChange(order, action.nextStatus)}
+                                    className="w-full rounded-2xl bg-[#6f3f24] px-4 py-3 text-sm font-bold text-white hover:bg-[#4b2818]"
+                                    >
+                                    {action.label}
+                                    </button>
+                                )}
 
-                              {order.status !== 'Completed' && (
-                                <button
-                                  onClick={() =>
-                                    handleStatusChange(order, 'Completed')
-                                  }
-                                  className="rounded-2xl border border-[#ead8c0] px-4 py-3 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
-                                >
-                                  Done
-                                </button>
-                              )}
+                                <div className="grid grid-cols-2 gap-3">
+                                    {order.status !== 'Completed' && (
+                                    <button
+                                        onClick={() => handleStatusChange(order, 'Completed')}
+                                        className="rounded-2xl border border-[#ead8c0] px-4 py-3 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+                                    >
+                                        Done
+                                    </button>
+                                    )}
+
+                                    <button
+                                    onClick={() => handleCancelOrder(order)}
+                                    className="rounded-2xl border border-red-200 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50"
+                                    >
+                                    Cancel
+                                    </button>
+                                </div>
                             </div>
 
                             {order.statusUpdatedAt && (

@@ -208,6 +208,34 @@ export const usePosStore = create(
           }
         }),
 
+      cancelOrder: (orderId) =>
+        set((state) => {
+          const cancelledAt = new Date().toLocaleString('id-ID')
+
+          const cancelSelectedOrder = (order) => {
+            const sameOrder =
+              order.orderId === orderId || order.queueCode === orderId
+
+            if (!sameOrder) {
+              return order
+            }
+
+            return {
+              ...order,
+              status: 'Cancelled',
+              statusUpdatedAt: cancelledAt,
+              cancelledAt,
+            }
+          }
+
+          return {
+            orderHistory: state.orderHistory.map(cancelSelectedOrder),
+            lastOrder: state.lastOrder
+              ? cancelSelectedOrder(state.lastOrder)
+              : null,
+          }
+        }),
+
       setReportFilterMode: (reportFilterMode) =>
         set({
           reportFilterMode,

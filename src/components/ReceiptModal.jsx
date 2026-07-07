@@ -70,6 +70,14 @@ function ReceiptModal() {
                 <OrderStatusBadge status={lastOrder.status || 'New'} />
               </div>
 
+              {lastOrder.status === 'Cancelled' && lastOrder.cancelledAt && (
+                <div className="rounded-2xl bg-red-50 p-3">
+                    <p className="text-sm font-bold text-red-500">
+                    Order ini dibatalkan pada {lastOrder.cancelledAt}.
+                    </p>
+                </div>
+                )}
+
               <div className="flex justify-between gap-3">
                 <span className="text-[#7b5d4a]">Waktu</span>
                 <span className="text-right">{lastOrder.createdAt}</span>
