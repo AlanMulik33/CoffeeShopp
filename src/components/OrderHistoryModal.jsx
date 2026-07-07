@@ -20,6 +20,94 @@ function OrderHistoryModal() {
     }).format(value)
   }
 
+  const exportToCSV = () => {
+    if (orderHistory.length === 0) {
+        return
+    }
+
+    const headers = [
+        'Nomor Antrian',
+        'Waktu',
+        'Tipe Order',
+        'Nomor Meja',
+        'Nama Pelanggan',
+        'No HP',
+        'Alamat Delivery',
+        'Metode Pembayaran',
+        'Subtotal',
+        'Diskon Voucher',
+        'Diskon Happy Hour',
+        'Total Diskon',
+        'PPN',
+        'Total',
+        'Item',
+    ]
+
+    const escapeCSV = (value) => {
+        const stringValue = String(value ?? '')
+        return `"${stringValue.replace(/"/g, '""')}"`
+    }
+
+    const rows = orderHistory.map((order) => {
+        const itemText = order.items
+        .map((item) => {
+            const modifiers = [
+            item.size,
+            item.temperature,
+            item.sugar,
+            item.ice,
+            item.addOns?.length > 0
+                ? `Add-on: ${item.addOns.map((addOn) => addOn.name).join(', ')}`
+                : '',
+            item.note ? `Catatan: ${item.note}` : '',
+            ]
+            .filter(Boolean)
+            .join(' | ')
+
+            return `${item.name} x${item.quantity} (${modifiers})`
+        })
+        .join('; ')
+
+        return [
+        order.queueCode,
+        order.createdAt,
+        order.orderType,
+        order.tableNumber || '',
+        order.customerName || '',
+        order.customerPhone || '',
+        order.deliveryAddress || '',
+        order.paymentMethod,
+        order.subtotal,
+        order.voucherDiscount || 0,
+        order.happyHourDiscount || 0,
+        order.discount || 0,
+        order.tax,
+        order.total,
+        itemText,
+        ].map(escapeCSV)
+    })
+
+    const csvContent = [
+        headers.map(escapeCSV).join(','),
+        ...rows.map((row) => row.join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], {
+        type: 'text/csv;charset=utf-8;',
+    })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    const date = new Date().toISOString().slice(0, 10)
+
+    link.href = url
+    link.download = `riwayat-order-${date}.csv`
+    link.click()
+
+    URL.revokeObjectURL(url)
+    }
+
   const totalRevenue = orderHistory.reduce((total, order) => {
     return total + order.total
   }, 0)
@@ -176,13 +264,21 @@ function OrderHistoryModal() {
           )}
         </div>
 
-        <div className="border-t border-[#ead8c0] p-5">
-          <button
+        <div className="flex gap-3 border-t border-[#ead8c0] p-5">
+        <button
             onClick={closeHistory}
-            className="w-full rounded-2xl border border-[#ead8c0] px-5 py-4 font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
-          >
-            Tutup Riwayat
-          </button>
+            className="flex-1 rounded-2xl border border-[#ead8c0] px-5 py-4 font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+        >
+            Tutup
+        </button>
+
+        <button
+            onClick={exportToCSV}
+            disabled={orderHistory.length === 0}
+            className="flex-1 rounded-2xl bg-[#6f3f24] px-5 py-4 font-bold text-white hover:bg-[#4b2818] disabled:cursor-not-allowed disabled:bg-[#c8b6a4]"
+        >
+            Export CSV
+        </button>
         </div>
       </div>
     </div>
