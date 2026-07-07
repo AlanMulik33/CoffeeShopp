@@ -105,7 +105,7 @@ function App() {
             </div>
           </section>
 
-          <section className="lg:w-[420px] lg:min-h-0">
+          <section className="lg:w-[460px] lg:min-h-0">
             <CartPanel />
           </section>
         </div>

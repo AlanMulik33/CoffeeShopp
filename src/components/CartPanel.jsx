@@ -1,11 +1,35 @@
 import { usePosStore } from '../store/posStore'
 
+const paymentMethods = ['Tunai', 'QRIS', 'Kartu', 'GoPay', 'OVO', 'Dana']
+
 function CartPanel() {
   const cart = usePosStore((state) => state.cart)
+
+  const orderType = usePosStore((state) => state.orderType)
+  const tableNumber = usePosStore((state) => state.tableNumber)
+  const customerName = usePosStore((state) => state.customerName)
+  const customerPhone = usePosStore((state) => state.customerPhone)
+  const deliveryAddress = usePosStore((state) => state.deliveryAddress)
+
+  const paymentMethod = usePosStore((state) => state.paymentMethod)
+  const cashPaid = usePosStore((state) => state.cashPaid)
+
+  const lastOrder = usePosStore((state) => state.lastOrder)
+
+  const setOrderType = usePosStore((state) => state.setOrderType)
+  const setTableNumber = usePosStore((state) => state.setTableNumber)
+  const setCustomerName = usePosStore((state) => state.setCustomerName)
+  const setCustomerPhone = usePosStore((state) => state.setCustomerPhone)
+  const setDeliveryAddress = usePosStore((state) => state.setDeliveryAddress)
+
+  const setPaymentMethod = usePosStore((state) => state.setPaymentMethod)
+  const setCashPaid = usePosStore((state) => state.setCashPaid)
+
   const increaseQuantity = usePosStore((state) => state.increaseQuantity)
   const decreaseQuantity = usePosStore((state) => state.decreaseQuantity)
   const removeFromCart = usePosStore((state) => state.removeFromCart)
   const clearCart = usePosStore((state) => state.clearCart)
+  const createTemporaryOrder = usePosStore((state) => state.createTemporaryOrder)
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', {
@@ -15,6 +39,10 @@ function CartPanel() {
     }).format(value)
   }
 
+  const parseNumber = (value) => {
+    return Number(String(value).replace(/\D/g, '')) || 0
+  }
+
   const subtotal = cart.reduce((total, item) => {
     return total + item.price * item.quantity
   }, 0)
@@ -22,107 +50,337 @@ function CartPanel() {
   const tax = Math.round(subtotal * 0.11)
   const total = subtotal + tax
 
+  const cashPaidNumber = parseNumber(cashPaid)
+  const change = paymentMethod === 'Tunai' ? cashPaidNumber - total : 0
+
+  const dineInValid = orderType !== 'Dine In' || tableNumber.trim() !== ''
+
+  const deliveryValid =
+    orderType !== 'Delivery' ||
+    (customerName.trim() !== '' &&
+      customerPhone.trim() !== '' &&
+      deliveryAddress.trim() !== '')
+
+  const paymentValid =
+    paymentMethod !== 'Tunai' || (cashPaidNumber > 0 && cashPaidNumber >= total)
+
+  const canCreateOrder =
+    cart.length > 0 && dineInValid && deliveryValid && paymentValid
+
+  const handleCashChange = (event) => {
+    const onlyNumber = event.target.value.replace(/\D/g, '')
+    setCashPaid(onlyNumber)
+  }
+
+  const handleCreateOrder = () => {
+    if (!canCreateOrder) {
+      return
+    }
+
+    const order = createTemporaryOrder({
+      subtotal,
+      tax,
+      total,
+      cashPaid: paymentMethod === 'Tunai' ? cashPaidNumber : total,
+      change: paymentMethod === 'Tunai' ? change : 0,
+    })
+
+    alert(
+      `Order berhasil dibuat!\nNomor antrian: ${order.queueCode}\nMetode bayar: ${order.paymentMethod}\nTotal: ${formatCurrency(order.total)}`
+    )
+  }
+
   return (
-    <aside className="flex h-full flex-col rounded-3xl border border-[#ead8c0] bg-white shadow-xl">
-      <div className="border-b border-[#ead8c0] p-6">
+    <aside className="flex h-full min-h-[720px] flex-col overflow-hidden rounded-3xl border border-[#ead8c0] bg-white shadow-xl lg:min-h-0">
+      <div className="shrink-0 border-b border-[#ead8c0] p-6">
         <p className="text-sm font-bold uppercase tracking-widest text-[#b88746]">
           Order Summary
         </p>
-        <h2 className="mt-1 text-2xl font-bold text-[#2d1810]">
-          Keranjang
-        </h2>
+
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <h2 className="text-3xl font-black text-[#2d1810]">Keranjang</h2>
+
+          {lastOrder && (
+            <div className="rounded-2xl bg-[#fff4e7] px-4 py-2 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#b88746]">
+                Last Queue
+              </p>
+              <p className="text-lg font-black text-[#2d1810]">
+                {lastOrder.queueCode}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-6">
-        {cart.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="text-6xl">🧺</div>
-            <h3 className="mt-4 text-xl font-bold text-[#2d1810]">
-              Keranjang kosong
-            </h3>
-            <p className="mt-2 text-sm text-[#7b5d4a]">
-              Klik menu kopi di sebelah kiri untuk menambahkan pesanan.
-            </p>
+      <div className="min-h-0 flex-1 overflow-y-auto p-6">
+        <div className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-4">
+          <p className="mb-3 font-bold text-[#2d1810]">Mode Order</p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {['Dine In', 'Take Away', 'Delivery'].map((type) => (
+              <button
+                key={type}
+                onClick={() => setOrderType(type)}
+                className={`rounded-2xl border px-3 py-3 text-xs font-bold transition ${
+                  orderType === type
+                    ? 'border-[#2d1810] bg-[#2d1810] text-white'
+                    : 'border-[#ead8c0] bg-white text-[#6f3f24] hover:bg-[#fff4e7]'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
           </div>
-        ) : (
-          cart.map((item) => (
-            <div
-              key={item.cartKey}
-              className="rounded-2xl border border-[#ead8c0] bg-[#fffaf3] p-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-bold text-[#2d1810]">
-                    {item.name}
-                  </h3>
 
-                  <p className="mt-1 text-xs font-bold uppercase tracking-widest text-[#b88746]">
-                    {item.size}
-                    {item.temperature ? ` • ${item.temperature}` : ''}
-                  </p>
+          {orderType === 'Dine In' && (
+            <div className="mt-4">
+              <label className="mb-2 block text-sm font-bold text-[#2d1810]">
+                Nomor Meja
+              </label>
 
-                  <div className="mt-2 space-y-1 text-xs text-[#7b5d4a]">
-                    {item.sugar && <p>{item.sugar}</p>}
-                    {item.ice && <p>{item.ice}</p>}
+              <input
+                type="text"
+                value={tableNumber}
+                onChange={(event) => setTableNumber(event.target.value)}
+                placeholder="Contoh: 05"
+                className="w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+              />
 
-                    {item.addOns.length > 0 && (
-                      <p>
-                        Add-on:{' '}
-                        {item.addOns.map((addOn) => addOn.name).join(', ')}
-                      </p>
-                    )}
+              {!dineInValid && (
+                <p className="mt-2 text-xs font-bold text-red-500">
+                  Nomor meja wajib diisi untuk Dine In.
+                </p>
+              )}
+            </div>
+          )}
 
-                    {item.note && (
-                      <p className="italic">
-                        Catatan: {item.note}
-                      </p>
-                    )}
-                  </div>
+          {orderType === 'Delivery' && (
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-[#2d1810]">
+                  Nama Pelanggan
+                </label>
 
-                  <p className="mt-2 text-sm text-[#7b5d4a]">
-                    {formatCurrency(item.price)} × {item.quantity}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => removeFromCart(item.cartKey)}
-                  className="rounded-full px-3 py-1 text-sm font-bold text-red-500 hover:bg-red-50"
-                >
-                  Hapus
-                </button>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
+                  placeholder="Contoh: Agus"
+                  className="w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                />
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => decreaseQuantity(item.cartKey)}
-                    className="h-9 w-9 rounded-full bg-[#ead8c0] font-bold text-[#2d1810]"
-                  >
-                    -
-                  </button>
+              <div>
+                <label className="mb-2 block text-sm font-bold text-[#2d1810]">
+                  Nomor HP
+                </label>
 
-                  <span className="w-8 text-center font-bold text-[#2d1810]">
-                    {item.quantity}
-                  </span>
+                <input
+                  type="text"
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
+                  placeholder="Contoh: 08123456789"
+                  className="w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                />
+              </div>
 
-                  <button
-                    onClick={() => increaseQuantity(item.cartKey)}
-                    className="h-9 w-9 rounded-full bg-[#6f3f24] font-bold text-white"
-                  >
-                    +
-                  </button>
+              <div>
+                <label className="mb-2 block text-sm font-bold text-[#2d1810]">
+                  Alamat Delivery
+                </label>
+
+                <textarea
+                  value={deliveryAddress}
+                  onChange={(event) => setDeliveryAddress(event.target.value)}
+                  placeholder="Contoh: Jl. Tukad Badung No. 10"
+                  className="min-h-20 w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                />
+              </div>
+
+              {!deliveryValid && (
+                <p className="text-xs font-bold text-red-500">
+                  Data delivery wajib lengkap.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-4">
+          <p className="mb-3 font-bold text-[#2d1810]">Pembayaran</p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {paymentMethods.map((method) => (
+              <button
+                key={method}
+                onClick={() => setPaymentMethod(method)}
+                className={`rounded-2xl border px-3 py-3 text-xs font-bold transition ${
+                  paymentMethod === method
+                    ? 'border-[#2d1810] bg-[#2d1810] text-white'
+                    : 'border-[#ead8c0] bg-white text-[#6f3f24] hover:bg-[#fff4e7]'
+                }`}
+              >
+                {method}
+              </button>
+            ))}
+          </div>
+
+          {paymentMethod === 'Tunai' && (
+            <div className="mt-4">
+              <label className="mb-2 block text-sm font-bold text-[#2d1810]">
+                Uang Diterima
+              </label>
+
+              <input
+                type="text"
+                value={cashPaid}
+                onChange={handleCashChange}
+                placeholder="Contoh: 100000"
+                className="w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+              />
+
+              <div className="mt-3 rounded-2xl bg-white p-4">
+                <div className="flex items-center justify-between text-sm text-[#7b5d4a]">
+                  <span>Dibayar</span>
+                  <span>{formatCurrency(cashPaidNumber)}</span>
                 </div>
 
-                <p className="font-bold text-[#6f3f24]">
-                  {formatCurrency(item.price * item.quantity)}
-                </p>
+                <div className="mt-2 flex items-center justify-between font-bold">
+                  <span
+                    className={
+                      change < 0 ? 'text-red-500' : 'text-[#2d1810]'
+                    }
+                  >
+                    Kembalian
+                  </span>
+                  <span
+                    className={
+                      change < 0 ? 'text-red-500' : 'text-[#6f3f24]'
+                    }
+                  >
+                    {change < 0
+                      ? `Kurang ${formatCurrency(Math.abs(change))}`
+                      : formatCurrency(change)}
+                  </span>
+                </div>
               </div>
             </div>
-          ))
-        )}
+          )}
+
+          {paymentMethod !== 'Tunai' && (
+            <p className="mt-3 rounded-2xl bg-white p-4 text-sm text-[#7b5d4a]">
+              Pembayaran menggunakan {paymentMethod}. Pastikan pembayaran sudah
+              berhasil sebelum order dibuat.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-5 space-y-4">
+          {cart.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-[#ead8c0] bg-[#fffaf3] p-8 text-center">
+              <div className="text-6xl">🧺</div>
+
+              <h3 className="mt-4 text-xl font-bold text-[#2d1810]">
+                Keranjang kosong
+              </h3>
+
+              <p className="mt-2 text-sm text-[#7b5d4a]">
+                Klik menu kopi di sebelah kiri untuk menambahkan pesanan.
+              </p>
+
+              {lastOrder && (
+                <div className="mt-5 rounded-2xl bg-white p-4 text-left">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                    Order terakhir
+                  </p>
+
+                  <p className="mt-1 font-bold text-[#2d1810]">
+                    {lastOrder.queueCode} • {lastOrder.orderType}
+                  </p>
+
+                  <p className="text-sm text-[#7b5d4a]">
+                    {formatCurrency(lastOrder.total)} • {lastOrder.paymentMethod}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            cart.map((item) => (
+              <div
+                key={item.cartKey}
+                className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-black text-[#2d1810]">
+                      {item.name}
+                    </h3>
+
+                    <p className="mt-1 text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                      {item.size}
+                      {item.temperature ? ` • ${item.temperature}` : ''}
+                    </p>
+
+                    <div className="mt-3 space-y-1 text-sm text-[#7b5d4a]">
+                      {item.sugar && <p>{item.sugar}</p>}
+                      {item.ice && <p>{item.ice}</p>}
+
+                      {item.addOns.length > 0 && (
+                        <p>
+                          Add-on:{' '}
+                          {item.addOns.map((addOn) => addOn.name).join(', ')}
+                        </p>
+                      )}
+
+                      {item.note && <p className="italic">Catatan: {item.note}</p>}
+                    </div>
+
+                    <p className="mt-3 text-sm text-[#7b5d4a]">
+                      {formatCurrency(item.price)} × {item.quantity}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => removeFromCart(item.cartKey)}
+                    className="shrink-0 rounded-full px-3 py-1 text-sm font-bold text-red-500 hover:bg-red-50"
+                  >
+                    Hapus
+                  </button>
+                </div>
+
+                <div className="mt-5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => decreaseQuantity(item.cartKey)}
+                      className="h-10 w-10 rounded-full bg-[#ead8c0] text-lg font-bold text-[#2d1810]"
+                    >
+                      -
+                    </button>
+
+                    <span className="w-8 text-center text-lg font-black text-[#2d1810]">
+                      {item.quantity}
+                    </span>
+
+                    <button
+                      onClick={() => increaseQuantity(item.cartKey)}
+                      className="h-10 w-10 rounded-full bg-[#6f3f24] text-lg font-bold text-white"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <p className="text-lg font-black text-[#6f3f24]">
+                    {formatCurrency(item.price * item.quantity)}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      <div className="border-t border-[#ead8c0] p-6">
+      <div className="shrink-0 border-t border-[#ead8c0] bg-white p-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm text-[#7b5d4a]">
             <span>Subtotal</span>
@@ -134,8 +392,8 @@ function CartPanel() {
             <span>{formatCurrency(tax)}</span>
           </div>
 
-          <div className="border-t border-dashed border-[#ead8c0] pt-3">
-            <div className="flex items-center justify-between text-lg font-bold text-[#2d1810]">
+          <div className="border-t border-dashed border-[#ead8c0] pt-4">
+            <div className="flex items-center justify-between text-xl font-black text-[#2d1810]">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>
@@ -143,10 +401,11 @@ function CartPanel() {
         </div>
 
         <button
-          disabled={cart.length === 0}
+          disabled={!canCreateOrder}
+          onClick={handleCreateOrder}
           className="mt-5 w-full rounded-2xl bg-[#6f3f24] px-5 py-4 font-bold text-white transition hover:bg-[#4b2818] disabled:cursor-not-allowed disabled:bg-[#c8b6a4]"
         >
-          Bayar Sekarang
+          Bayar & Buat Order
         </button>
 
         {cart.length > 0 && (

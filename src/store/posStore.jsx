@@ -1,7 +1,44 @@
 import { create } from 'zustand'
 
-export const usePosStore = create((set) => ({
+export const usePosStore = create((set, get) => ({
   cart: [],
+
+  orderType: 'Dine In',
+  tableNumber: '',
+  customerName: '',
+  customerPhone: '',
+  deliveryAddress: '',
+
+  paymentMethod: 'Tunai',
+  cashPaid: '',
+
+  nextQueueNumber: 1,
+  lastOrder: null,
+
+  setOrderType: (orderType) =>
+    set({
+      orderType,
+      tableNumber: '',
+      customerName: '',
+      customerPhone: '',
+      deliveryAddress: '',
+    }),
+
+  setTableNumber: (tableNumber) => set({ tableNumber }),
+
+  setCustomerName: (customerName) => set({ customerName }),
+
+  setCustomerPhone: (customerPhone) => set({ customerPhone }),
+
+  setDeliveryAddress: (deliveryAddress) => set({ deliveryAddress }),
+
+  setPaymentMethod: (paymentMethod) =>
+    set({
+      paymentMethod,
+      cashPaid: paymentMethod === 'Tunai' ? get().cashPaid : '',
+    }),
+
+  setCashPaid: (cashPaid) => set({ cashPaid }),
 
   addToCart: (product, options) =>
     set((state) => {
@@ -83,4 +120,40 @@ export const usePosStore = create((set) => ({
     })),
 
   clearCart: () => set({ cart: [] }),
+
+  createTemporaryOrder: (summary) => {
+    const state = get()
+
+    const queueCode = `A${String(state.nextQueueNumber).padStart(3, '0')}`
+
+    const newOrder = {
+      queueCode,
+      orderType: state.orderType,
+      tableNumber: state.tableNumber,
+      customerName: state.customerName,
+      customerPhone: state.customerPhone,
+      deliveryAddress: state.deliveryAddress,
+      items: state.cart,
+      subtotal: summary.subtotal,
+      tax: summary.tax,
+      total: summary.total,
+      paymentMethod: state.paymentMethod,
+      cashPaid: summary.cashPaid,
+      change: summary.change,
+      createdAt: new Date().toLocaleString('id-ID'),
+    }
+
+    set({
+      lastOrder: newOrder,
+      nextQueueNumber: state.nextQueueNumber + 1,
+      cart: [],
+      tableNumber: '',
+      customerName: '',
+      customerPhone: '',
+      deliveryAddress: '',
+      cashPaid: '',
+    })
+
+    return newOrder
+  },
 }))
