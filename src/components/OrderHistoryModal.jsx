@@ -145,7 +145,7 @@ function OrderHistoryModal() {
           </div>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto p-6">
+        <div className="coffee-scrollbar max-h-[70vh] overflow-y-auto p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="rounded-3xl bg-[#fffaf3] p-5">
               <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">

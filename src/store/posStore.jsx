@@ -10,6 +10,70 @@ export const usePosStore = create((set, get) => ({
       return { theme: nextTheme }
     }),
 
+    confirmDialog: {
+      isOpen: false,
+      title: '',
+      message: '',
+      confirmText: 'Ya',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: null,
+    },
+
+    openConfirmDialog: (config) =>
+      set({
+        confirmDialog: {
+          isOpen: true,
+          title: config.title || 'Konfirmasi',
+          message: config.message || 'Apakah kamu yakin?',
+          confirmText: config.confirmText || 'Ya',
+          cancelText: config.cancelText || 'Batal',
+          variant: config.variant || 'danger',
+          onConfirm: config.onConfirm || null,
+        },
+      }),
+
+    closeConfirmDialog: () =>
+      set({
+        confirmDialog: {
+          isOpen: false,
+          title: '',
+          message: '',
+          confirmText: 'Ya',
+          cancelText: 'Batal',
+          variant: 'danger',
+          onConfirm: null,
+        },
+      }),
+
+      toasts: [],
+
+      addToast: (toast) => {
+        const id = crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`
+
+        const newToast = {
+          id,
+          title: toast.title || 'Notifikasi',
+          message: toast.message || '',
+          type: toast.type || 'success',
+        }
+
+        set((state) => ({
+          toasts: [newToast, ...state.toasts].slice(0, 4),
+        }))
+
+        setTimeout(() => {
+          get().removeToast(id)
+        }, toast.duration || 3000)
+      },
+
+      removeToast: (id) =>
+        set((state) => ({
+          toasts: state.toasts.filter((toast) => toast.id !== id),
+        })),
+
   orderType: 'Dine In',
   tableNumber: '',
   customerName: '',

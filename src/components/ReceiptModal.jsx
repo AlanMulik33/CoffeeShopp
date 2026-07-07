@@ -44,7 +44,7 @@ function ReceiptModal() {
           </div>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto p-5">
+        <div className="coffee-scrollbar max-h-[70vh] overflow-y-auto p-5">
           <div id="receipt-print" className="bg-white text-[#2d1810]">
             <div className="text-center">
               <h1 className="text-2xl font-black">Warm Brew Coffee</h1>

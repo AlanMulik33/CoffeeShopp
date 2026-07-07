@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { products } from './data/products'
 import ProductCard from './components/ProductCard'
 import CartPanel from './components/CartPanel'
@@ -6,11 +6,25 @@ import ProductOptionModal from './components/ProductOptionModal'
 import ReceiptModal from './components/ReceiptModal'
 import OrderHistoryModal from './components/OrderHistoryModal'
 import ThemeToggle from './components/ThemeToggle'
+import ConfirmDialog from './components/ConfirmDialog'
+import ToastContainer from './components/ToastContainer'
+import { usePosStore } from './store/posStore'
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('Semua')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
+
+  const cart = usePosStore((state) => state.cart)
+  const receiptOpen = usePosStore((state) => state.receiptOpen)
+  const historyOpen = usePosStore((state) => state.historyOpen)
+
+  const closeReceipt = usePosStore((state) => state.closeReceipt)
+  const closeHistory = usePosStore((state) => state.closeHistory)
+  const openHistory = usePosStore((state) => state.openHistory)
+  const clearCart = usePosStore((state) => state.clearCart)
+  const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
+  const addToast = usePosStore((state) => state.addToast)
 
   const categories = useMemo(() => {
     const uniqueCategories = products.map((product) => product.category)
@@ -27,6 +41,99 @@ function App() {
 
     return matchCategory && matchSearch
   })
+
+  useEffect(() => {
+    const handleKeyboardShortcut = (event) => {
+      const activeElement = document.activeElement
+      const activeTag = activeElement?.tagName?.toLowerCase()
+
+      const isTyping =
+        activeTag === 'input' ||
+        activeTag === 'textarea' ||
+        activeElement?.isContentEditable
+
+      const isCtrlOrCommand = event.ctrlKey || event.metaKey
+
+      if (isCtrlOrCommand && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+
+        const searchInput = document.getElementById('menu-search-input')
+
+        if (searchInput) {
+          searchInput.focus()
+          searchInput.select()
+        }
+
+        return
+      }
+
+      if (event.key === 'Escape') {
+        if (selectedProduct) {
+          setSelectedProduct(null)
+          return
+        }
+
+        if (receiptOpen) {
+          closeReceipt()
+          return
+        }
+
+        if (historyOpen) {
+          closeHistory()
+          return
+        }
+      }
+
+      if (event.key === 'F2') {
+        event.preventDefault()
+        openHistory()
+        return
+      }
+
+      if (isCtrlOrCommand && event.key === 'Backspace' && !isTyping) {
+        event.preventDefault()
+
+        if (cart.length === 0) {
+          return
+        }
+
+      openConfirmDialog({
+        title: 'Kosongkan keranjang?',
+        message:
+          'Semua item yang sudah masuk ke keranjang akan dihapus. Aksi ini tidak bisa dibatalkan.',
+        confirmText: 'Kosongkan',
+        cancelText: 'Batal',
+        variant: 'danger',
+        onConfirm: () => {
+          clearCart()
+
+          addToast({
+            title: 'Keranjang dikosongkan',
+            message: 'Semua item berhasil dihapus dari keranjang.',
+            type: 'warning',
+          })
+        },
+      })
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyboardShortcut)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyboardShortcut)
+    }
+}, [
+  selectedProduct,
+  receiptOpen,
+  historyOpen,
+  cart.length,
+  closeReceipt,
+  closeHistory,
+  openHistory,
+  clearCart,
+  openConfirmDialog,
+  addToast,
+])
 
   return (
     <>
@@ -62,6 +169,7 @@ function App() {
 
               <div className="mt-6 flex flex-col gap-4">
                 <input
+                  id="menu-search-input"
                   type="text"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
@@ -69,7 +177,7 @@ function App() {
                   className="w-full rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-[#2d1810] outline-none transition focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
                 />
 
-                <div className="flex gap-3 overflow-x-auto pb-1">
+                <div className="coffee-scrollbar flex gap-3 overflow-x-auto pb-1">
                   {categories.map((category) => (
                     <button
                       key={category}
@@ -84,16 +192,36 @@ function App() {
                     </button>
                   ))}
                 </div>
+
+                <div className="flex flex-wrap gap-2 text-xs font-bold text-[#7b5d4a]">
+                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                    Ctrl + K: Cari Menu
+                  </span>
+
+                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                    Esc: Tutup Modal
+                  </span>
+
+                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                    F2: Riwayat Order
+                  </span>
+
+                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                    Ctrl + Backspace: Kosongkan Keranjang
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-6 pb-24">
+            <div className="coffee-scrollbar min-h-0 flex-1 overflow-y-auto p-6 pb-24">
               {filteredProducts.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center text-center">
                   <div className="text-6xl">🔎</div>
+
                   <h3 className="mt-4 text-xl font-bold text-[#2d1810]">
                     Menu tidak ditemukan
                   </h3>
+
                   <p className="mt-2 text-sm text-[#7b5d4a]">
                     Coba gunakan kata kunci lain atau pilih kategori berbeda.
                   </p>
@@ -124,7 +252,12 @@ function App() {
       />
 
       <ReceiptModal />
+
       <OrderHistoryModal />
+
+      <ConfirmDialog />
+
+      <ToastContainer />
     </>
   )
 }

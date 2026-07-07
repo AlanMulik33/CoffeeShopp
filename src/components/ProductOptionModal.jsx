@@ -3,6 +3,7 @@ import { usePosStore } from '../store/posStore'
 
 function ProductOptionModal({ product, onClose }) {
   const addToCart = usePosStore((state) => state.addToCart)
+  const addToast = usePosStore((state) => state.addToast)
 
   const [selectedSize, setSelectedSize] = useState('')
   const [selectedTemperature, setSelectedTemperature] = useState('')
@@ -80,6 +81,12 @@ function ProductOptionModal({ product, onClose }) {
       finalPrice,
     })
 
+    addToast({
+      title: 'Item ditambahkan',
+      message: `${quantity}x ${product.name} masuk ke keranjang.`,
+      type: 'success',
+    })
+
     onClose()
   }
 
@@ -109,7 +116,7 @@ function ProductOptionModal({ product, onClose }) {
           </div>
         </div>
 
-        <div className="max-h-[60vh] space-y-6 overflow-y-auto p-6">
+        <div className="coffee-scrollbar max-h-[60vh] space-y-6 overflow-y-auto p-6">
           <div>
             <p className="mb-3 font-bold text-[#2d1810]">Ukuran</p>
 

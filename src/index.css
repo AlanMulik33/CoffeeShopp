@@ -108,3 +108,74 @@ html[data-theme='dark'] .shadow-lg,
 html[data-theme='dark'] .shadow-sm {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
 }
+
+/* =========================
+   CUSTOM SCROLLBAR
+========================= */
+
+.coffee-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #b88746 transparent;
+}
+
+.coffee-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.coffee-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.coffee-scrollbar::-webkit-scrollbar-thumb {
+  background: #8b5a2b;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.coffee-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9c6b35;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Dark mode scrollbar */
+html[data-theme='dark'] .coffee-scrollbar {
+  scrollbar-color: #8b5a2b #24140e;
+}
+
+html[data-theme='dark'] .coffee-scrollbar::-webkit-scrollbar-track {
+  background: #24140e;
+  border-radius: 999px;
+}
+
+html[data-theme='dark'] .coffee-scrollbar::-webkit-scrollbar-thumb {
+  background: #8b5a2b;
+  border-radius: 999px;
+  border: 2px solid #24140e;
+  background-clip: padding-box;
+}
+
+html[data-theme='dark'] .coffee-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #8b5a2b;
+  border: 2px solid #24140e;
+  background-clip: padding-box;
+}
+
+html[data-theme='dark'] .bg-red-50 {
+  background-color: rgba(127, 29, 29, 0.35) !important;
+}
+
+html[data-theme='dark'] .text-red-500 {
+  color: #f87171 !important;
+}
+
+html[data-theme='dark'] .bg-yellow-50 {
+  background-color: rgba(133, 77, 14, 0.35) !important;
+}
+
+html[data-theme='dark'] .text-yellow-600 {
+  color: #facc15 !important;
+}

@@ -47,6 +47,28 @@ function CartPanel() {
   const removeFromCart = usePosStore((state) => state.removeFromCart)
   const clearCart = usePosStore((state) => state.clearCart)
   const createTemporaryOrder = usePosStore((state) => state.createTemporaryOrder)
+  const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
+  const addToast = usePosStore((state) => state.addToast)
+
+  const handleClearCart = () => {
+    openConfirmDialog({
+      title: 'Kosongkan keranjang?',
+      message:
+        'Semua item, voucher, dan data pembayaran di keranjang saat ini akan dihapus.',
+      confirmText: 'Kosongkan',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: () => {
+        clearCart()
+
+        addToast({
+          title: 'Keranjang dikosongkan',
+          message: 'Semua item berhasil dihapus dari keranjang.',
+          type: 'warning',
+        })
+      },
+    })
+  }
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', {
@@ -128,7 +150,7 @@ function CartPanel() {
       return
     }
 
-    createTemporaryOrder({
+    const order = createTemporaryOrder({
       subtotal,
       voucherDiscount,
       happyHourPromo: activeHappyHourPromo,
@@ -139,6 +161,12 @@ function CartPanel() {
       total,
       cashPaid: paymentMethod === 'Tunai' ? cashPaidNumber : total,
       change: paymentMethod === 'Tunai' ? change : 0,
+    })
+
+    addToast({
+      title: 'Order berhasil',
+      message: `Nomor antrian ${order.queueCode} sudah dibuat.`,
+      type: 'success',
     })
   }
 
@@ -171,7 +199,7 @@ function CartPanel() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-6">
+      <div className="coffee-scrollbar min-h-0 flex-1 overflow-y-auto p-6">
         <div className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-4">
           <p className="mb-3 font-bold text-[#2d1810]">Mode Order</p>
 
@@ -567,7 +595,7 @@ function CartPanel() {
 
         {cart.length > 0 && (
           <button
-            onClick={clearCart}
+            onClick={handleClearCart}
             className="mt-3 w-full rounded-2xl border border-[#ead8c0] px-5 py-3 font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
           >
             Kosongkan Keranjang
