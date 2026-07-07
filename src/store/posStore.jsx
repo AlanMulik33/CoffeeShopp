@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getTodayInputValue } from '../utils/dateFilter'
+import { products as initialProducts } from '../data/products'
 
 const defaultConfirmDialog = {
   isOpen: false,
@@ -94,6 +95,9 @@ export const usePosStore = create(
       historyOpen: false,
       dashboardOpen: false,
       kitchenOpen: false,
+      productAdminOpen: false,
+
+      productCatalog: initialProducts,
 
       reportFilterMode: 'today',
       reportStartDate: getTodayInputValue(),
@@ -184,6 +188,54 @@ export const usePosStore = create(
       openKitchen: () => set({ kitchenOpen: true }),
 
       closeKitchen: () => set({ kitchenOpen: false }),
+
+      openProductAdmin: () => set({ productAdminOpen: true }),
+
+      closeProductAdmin: () => set({ productAdminOpen: false }),
+
+      addProduct: (product) =>
+        set((state) => {
+          const newProduct = {
+            ...product,
+            id: Date.now(),
+            isAvailable: true,
+          }
+
+          return {
+            productCatalog: [...state.productCatalog, newProduct],
+          }
+        }),
+
+      updateProduct: (productId, updatedProduct) =>
+        set((state) => ({
+          productCatalog: state.productCatalog.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  ...updatedProduct,
+                }
+              : product
+          ),
+        })),
+
+      toggleProductAvailability: (productId) =>
+        set((state) => ({
+          productCatalog: state.productCatalog.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  isAvailable: !product.isAvailable,
+                }
+              : product
+          ),
+        })),
+
+      deleteProduct: (productId) =>
+        set((state) => ({
+          productCatalog: state.productCatalog.filter(
+            (product) => product.id !== productId
+          ),
+        })),
 
       updateOrderStatus: (orderId, status) =>
         set((state) => {
@@ -511,6 +563,8 @@ export const usePosStore = create(
         cart: state.cart,
         theme: state.theme,
 
+        productCatalog: state.productCatalog,
+
         orderType: state.orderType,
         tableNumber: state.tableNumber,
         customerName: state.customerName,
@@ -541,6 +595,7 @@ export const usePosStore = create(
         state.historyOpen = false
         state.dashboardOpen = false
         state.kitchenOpen = false
+        state.productAdminOpen = false
         state.confirmDialog = { ...defaultConfirmDialog }
         state.toasts = []
         state.promoError = ''
