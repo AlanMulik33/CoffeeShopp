@@ -83,12 +83,52 @@ function DashboardModal() {
     })
 
     const paymentStats = Object.entries(paymentMap)
-      .map(([method, count]) => ({ method, count }))
-      .sort((a, b) => b.count - a.count)
+    .map(([method, count]) => ({ method, count }))
+    .sort((a, b) => b.count - a.count)
 
     const topPayment = paymentStats[0] || null
 
-    const recentOrders = orderHistory.slice(0, 5)
+    const hourlySales = Array.from({ length: 24 }, (_, hour) => ({
+    hour,
+    label: `${String(hour).padStart(2, '0')}:00`,
+    revenue: 0,
+    transactions: 0,
+    items: 0,
+    }))
+
+    filteredOrders.forEach((order) => {
+    const orderDate = order.createdAtISO ? new Date(order.createdAtISO) : null
+
+    const hour =
+        Number.isInteger(order.createdHour) && order.createdHour >= 0
+        ? order.createdHour
+        : orderDate
+            ? orderDate.getHours()
+            : null
+
+    if (hour === null || Number.isNaN(hour)) {
+        return
+    }
+
+    const itemCount = order.items.reduce((total, item) => {
+        return total + item.quantity
+    }, 0)
+
+    hourlySales[hour].revenue += order.total || 0
+    hourlySales[hour].transactions += 1
+    hourlySales[hour].items += itemCount
+    })
+
+    const activeHourlySales = hourlySales.filter((hourData) => {
+    return hourData.revenue > 0 || hourData.transactions > 0
+    })
+
+    const maxHourlyRevenue =
+    activeHourlySales.length > 0
+        ? Math.max(...activeHourlySales.map((hourData) => hourData.revenue))
+        : 0
+
+    const recentOrders = filteredOrders.slice(0, 5)
 
     return {
     filteredOrders,
@@ -101,6 +141,9 @@ function DashboardModal() {
     bestSeller,
     paymentStats,
     topPayment,
+    hourlySales,
+    activeHourlySales,
+    maxHourlyRevenue,
     recentOrders,
     }
   }, [orderHistory, reportFilterMode, reportStartDate, reportEndDate])
@@ -229,6 +272,91 @@ function DashboardModal() {
               </p>
             </div>
           </div>
+
+          <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
+            <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+                <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                    Hourly Sales
+                </p>
+
+                <h3 className="mt-1 text-xl font-black text-[#2d1810]">
+                    Grafik Penjualan Per Jam
+                </h3>
+
+                <p className="mt-1 text-sm text-[#7b5d4a]">
+                    Omzet dan jumlah transaksi berdasarkan jam order.
+                </p>
+                </div>
+
+                <div className="rounded-2xl bg-white px-4 py-3 text-sm">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                    Peak Hour
+                </p>
+
+                <p className="font-black text-[#2d1810]">
+                    {dashboardData.activeHourlySales.length > 0
+                    ? dashboardData.activeHourlySales
+                        .slice()
+                        .sort((a, b) => b.revenue - a.revenue)[0].label
+                    : '-'}
+                </p>
+                </div>
+            </div>
+
+            {dashboardData.activeHourlySales.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-[#ead8c0] bg-white p-8 text-center">
+                <div className="text-5xl">📈</div>
+
+                <p className="mt-3 font-bold text-[#2d1810]">
+                    Belum ada data grafik
+                </p>
+
+                <p className="mt-1 text-sm text-[#7b5d4a]">
+                    Buat transaksi dulu agar grafik penjualan per jam muncul.
+                </p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                {dashboardData.activeHourlySales.map((hourData) => {
+                    const width =
+                    dashboardData.maxHourlyRevenue > 0
+                        ? Math.max(
+                            8,
+                            (hourData.revenue / dashboardData.maxHourlyRevenue) * 100
+                        )
+                        : 0
+
+                    return (
+                    <div key={hourData.hour}>
+                        <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                        <div>
+                            <p className="font-black text-[#2d1810]">
+                            {hourData.label}
+                            </p>
+
+                            <p className="text-xs text-[#7b5d4a]">
+                            {hourData.transactions} transaksi • {hourData.items} item
+                            </p>
+                        </div>
+
+                        <p className="font-black text-[#6f3f24]">
+                            {formatCurrency(hourData.revenue)}
+                        </p>
+                        </div>
+
+                        <div className="h-4 overflow-hidden rounded-full bg-white">
+                        <div
+                            className="h-full rounded-full bg-[#b88746]"
+                            style={{ width: `${width}%` }}
+                        />
+                        </div>
+                    </div>
+                    )
+                })}
+                </div>
+            )}
+            </div>
 
           <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
             <div className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
