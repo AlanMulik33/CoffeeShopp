@@ -1,8 +1,13 @@
 import { useMemo } from 'react'
 import { usePosStore } from '../store/posStore'
+import ReportDateFilter from './ReportDateFilter'
+import { filterOrdersByDate } from '../utils/dateFilter'
 
 function DashboardModal() {
   const orderHistory = usePosStore((state) => state.orderHistory)
+  const reportFilterMode = usePosStore((state) => state.reportFilterMode)
+  const reportStartDate = usePosStore((state) => state.reportStartDate)
+  const reportEndDate = usePosStore((state) => state.reportEndDate)
   const dashboardOpen = usePosStore((state) => state.dashboardOpen)
   const closeDashboard = usePosStore((state) => state.closeDashboard)
   const showReceiptFromHistory = usePosStore(
@@ -18,17 +23,24 @@ function DashboardModal() {
   }
 
   const dashboardData = useMemo(() => {
-    const totalTransactions = orderHistory.length
+    const filteredOrders = filterOrdersByDate(
+        orderHistory,
+        reportFilterMode,
+        reportStartDate,
+        reportEndDate
+    )
 
-    const totalRevenue = orderHistory.reduce((total, order) => {
+    const totalTransactions = filteredOrders.length
+
+    const totalRevenue = filteredOrders.reduce((total, order) => {
       return total + (order.total || 0)
     }, 0)
 
-    const totalDiscount = orderHistory.reduce((total, order) => {
+    const totalDiscount = filteredOrders.reduce((total, order) => {
       return total + (order.discount || 0)
     }, 0)
 
-    const totalItems = orderHistory.reduce((total, order) => {
+    const totalItems = filteredOrders.reduce((total, order) => {
       return (
         total +
         order.items.reduce((itemTotal, item) => {
@@ -79,18 +91,19 @@ function DashboardModal() {
     const recentOrders = orderHistory.slice(0, 5)
 
     return {
-      totalTransactions,
-      totalRevenue,
-      totalDiscount,
-      totalItems,
-      averageTransaction,
-      topProducts,
-      bestSeller,
-      paymentStats,
-      topPayment,
-      recentOrders,
+    filteredOrders,
+    totalTransactions,
+    totalRevenue,
+    totalDiscount,
+    totalItems,
+    averageTransaction,
+    topProducts,
+    bestSeller,
+    paymentStats,
+    topPayment,
+    recentOrders,
     }
-  }, [orderHistory])
+  }, [orderHistory, reportFilterMode, reportStartDate, reportEndDate])
 
   if (!dashboardOpen) {
     return null
@@ -135,7 +148,8 @@ function DashboardModal() {
         </div>
 
         <div className="coffee-scrollbar max-h-[74vh] overflow-y-auto p-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <ReportDateFilter totalData={dashboardData.filteredOrders.length} />
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
               <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
                 Total Transaksi

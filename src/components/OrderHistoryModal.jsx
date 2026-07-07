@@ -1,7 +1,12 @@
 import { usePosStore } from '../store/posStore'
+import ReportDateFilter from './ReportDateFilter'
+import { filterOrdersByDate } from '../utils/dateFilter'
 
 function OrderHistoryModal() {
   const orderHistory = usePosStore((state) => state.orderHistory)
+  const reportFilterMode = usePosStore((state) => state.reportFilterMode)
+  const reportStartDate = usePosStore((state) => state.reportStartDate)
+  const reportEndDate = usePosStore((state) => state.reportEndDate)
   const historyOpen = usePosStore((state) => state.historyOpen)
   const closeHistory = usePosStore((state) => state.closeHistory)
   const showReceiptFromHistory = usePosStore(
@@ -20,8 +25,15 @@ function OrderHistoryModal() {
     }).format(value)
   }
 
+  const filteredOrders = filterOrdersByDate(
+    orderHistory,
+    reportFilterMode,
+    reportStartDate,
+    reportEndDate
+    )
+
   const exportToCSV = () => {
-    if (orderHistory.length === 0) {
+    if (filteredOrders.length === 0) {
         return
     }
 
@@ -48,7 +60,7 @@ function OrderHistoryModal() {
         return `"${stringValue.replace(/"/g, '""')}"`
     }
 
-    const rows = orderHistory.map((order) => {
+    const rows = filteredOrders.map((order) => {
         const itemText = order.items
         .map((item) => {
             const modifiers = [
@@ -108,11 +120,11 @@ function OrderHistoryModal() {
     URL.revokeObjectURL(url)
     }
 
-  const totalRevenue = orderHistory.reduce((total, order) => {
+  const totalRevenue = filteredOrders.reduce((total, order) => {
     return total + order.total
   }, 0)
 
-  const totalItems = orderHistory.reduce((total, order) => {
+  const totalItems = filteredOrders.reduce((total, order) => {
     return (
       total +
       order.items.reduce((itemTotal, item) => itemTotal + item.quantity, 0)
@@ -146,13 +158,14 @@ function OrderHistoryModal() {
         </div>
 
         <div className="coffee-scrollbar max-h-[70vh] overflow-y-auto p-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <ReportDateFilter totalData={filteredOrders.length} />
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="rounded-3xl bg-[#fffaf3] p-5">
               <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
                 Total Order
               </p>
               <p className="mt-2 text-3xl font-black text-[#2d1810]">
-                {orderHistory.length}
+                {filteredOrders.length}
               </p>
             </div>
 
@@ -175,7 +188,7 @@ function OrderHistoryModal() {
             </div>
           </div>
 
-          {orderHistory.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <div className="mt-6 rounded-3xl border border-dashed border-[#ead8c0] bg-[#fffaf3] p-10 text-center">
               <div className="text-6xl">🧾</div>
               <h3 className="mt-4 text-xl font-bold text-[#2d1810]">
@@ -187,7 +200,7 @@ function OrderHistoryModal() {
             </div>
           ) : (
             <div className="mt-6 space-y-4">
-              {orderHistory.map((order) => (
+              {filteredOrders.map((order) => (
                 <div
                   key={`${order.queueCode}-${order.createdAt}`}
                   className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5"
@@ -274,7 +287,7 @@ function OrderHistoryModal() {
 
         <button
             onClick={exportToCSV}
-            disabled={orderHistory.length === 0}
+            disabled={orderHistory.length === 0}disabled={filteredOrders.length === 0}
             className="flex-1 rounded-2xl bg-[#6f3f24] px-5 py-4 font-bold text-white hover:bg-[#4b2818] disabled:cursor-not-allowed disabled:bg-[#c8b6a4]"
         >
             Export CSV

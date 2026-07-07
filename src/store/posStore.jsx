@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { getTodayInputValue } from '../utils/dateFilter'
 
 const defaultConfirmDialog = {
   isOpen: false,
@@ -93,6 +94,10 @@ export const usePosStore = create(
       historyOpen: false,
       dashboardOpen: false,
 
+      reportFilterMode: 'today',
+      reportStartDate: getTodayInputValue(),
+      reportEndDate: getTodayInputValue(),
+
       setOrderType: (orderType) =>
         set({
           orderType,
@@ -174,6 +179,34 @@ export const usePosStore = create(
       openDashboard: () => set({ dashboardOpen: true }),
 
       closeDashboard: () => set({ dashboardOpen: false }),
+
+      setReportFilterMode: (reportFilterMode) =>
+        set({
+          reportFilterMode,
+          reportStartDate:
+            reportFilterMode === 'today' ? getTodayInputValue() : get().reportStartDate,
+          reportEndDate:
+            reportFilterMode === 'today' ? getTodayInputValue() : get().reportEndDate,
+        }),
+
+      setReportStartDate: (reportStartDate) =>
+        set({
+          reportStartDate,
+          reportFilterMode: 'custom',
+        }),
+
+      setReportEndDate: (reportEndDate) =>
+        set({
+          reportEndDate,
+          reportFilterMode: 'custom',
+        }),
+
+      resetReportFilterToday: () =>
+        set({
+          reportFilterMode: 'today',
+          reportStartDate: getTodayInputValue(),
+          reportEndDate: getTodayInputValue(),
+        }),
 
       showReceiptFromHistory: (order) =>
         set({
@@ -405,6 +438,10 @@ export const usePosStore = create(
         nextQueueNumber: state.nextQueueNumber,
         lastOrder: state.lastOrder,
         orderHistory: state.orderHistory,
+
+        reportFilterMode: state.reportFilterMode,
+        reportStartDate: state.reportStartDate,
+        reportEndDate: state.reportEndDate,
       }),
 
       onRehydrateStorage: () => (state) => {
