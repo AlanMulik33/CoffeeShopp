@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { usePosStore } from '../store/posStore'
 import ReportDateFilter from './ReportDateFilter'
 import OrderStatusBadge from './OrderStatusBadge'
+import ResetDemoDataButton from './ResetDemoDataButton'
 import { filterOrdersByDate } from '../utils/dateFilter'
 
 function DashboardModal() {
@@ -588,7 +589,7 @@ function DashboardModal() {
                         {formatCurrency(order.total)}
                       </p>
 
-<div className="flex gap-2">
+                        <div className="flex gap-2">
                             <button
                                 onClick={() => showReceiptFromHistory(order)}
                                 className="rounded-2xl bg-[#6f3f24] px-4 py-3 text-sm font-bold text-white hover:bg-[#4b2818]"
@@ -604,7 +605,7 @@ function DashboardModal() {
                                 Cancel
                                 </button>
                             )}
-</div>
+                        </div>
                     </div>
                   </div>
                 ))}
@@ -613,13 +614,15 @@ function DashboardModal() {
           </div>
         </div>
 
-        <div className="border-t border-[#ead8c0] p-5">
-          <button
-            onClick={closeDashboard}
-            className="w-full rounded-2xl border border-[#ead8c0] px-5 py-4 font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
-          >
-            Tutup Dashboard
-          </button>
+        <div className="grid grid-cols-1 gap-3 border-t border-[#ead8c0] p-5 md:grid-cols-2">
+            <ResetDemoDataButton fullWidth />
+
+            <button
+                onClick={closeDashboard}
+                className="w-full rounded-2xl border border-[#ead8c0] px-5 py-4 font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+            >
+                Tutup Dashboard
+            </button>
         </div>
       </div>
     </div>

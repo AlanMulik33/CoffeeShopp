@@ -421,6 +421,33 @@ export const usePosStore = create(
           cashPaid: '',
         }),
 
+      resetDemoData: () =>
+        set({
+          cart: [],
+
+          orderType: 'Dine In',
+          tableNumber: '',
+          customerName: '',
+          customerPhone: '',
+          deliveryAddress: '',
+
+          paymentMethod: 'Tunai',
+          cashPaid: '',
+
+          promoCode: '',
+          appliedVoucher: null,
+          promoError: '',
+
+          nextQueueNumber: 1,
+          lastOrder: null,
+          orderHistory: [],
+          receiptOpen: false,
+
+          reportFilterMode: 'today',
+          reportStartDate: getTodayInputValue(),
+          reportEndDate: getTodayInputValue(),
+        }),
+
       createTemporaryOrder: (summary) => {
         const state = get()
 

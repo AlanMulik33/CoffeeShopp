@@ -1,6 +1,7 @@
 import { usePosStore } from '../store/posStore'
 import ReportDateFilter from './ReportDateFilter'
 import OrderStatusBadge from './OrderStatusBadge'
+import ResetDemoDataButton from './ResetDemoDataButton'
 import { filterOrdersByDate } from '../utils/dateFilter'
 
 function OrderHistoryModal() {
@@ -331,20 +332,22 @@ function OrderHistoryModal() {
           )}
         </div>
 
-        <div className="flex gap-3 border-t border-[#ead8c0] p-5">
-        <button
-            onClick={closeHistory}
-            className="flex-1 rounded-2xl border border-[#ead8c0] px-5 py-4 font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
-        >
-            Tutup
-        </button>
+        <div className="grid grid-cols-1 gap-3 border-t border-[#ead8c0] p-5 md:grid-cols-3">
+        <ResetDemoDataButton fullWidth />
 
         <button
             onClick={exportToCSV}
-            disabled={orderHistory.length === 0}disabled={filteredOrders.length === 0}
-            className="flex-1 rounded-2xl bg-[#6f3f24] px-5 py-4 font-bold text-white hover:bg-[#4b2818] disabled:cursor-not-allowed disabled:bg-[#c8b6a4]"
+            disabled={filteredOrders.length === 0}
+            className="w-full rounded-2xl bg-[#6f3f24] px-5 py-4 font-bold text-white hover:bg-[#4b2818] disabled:cursor-not-allowed disabled:bg-[#c8b6a4]"
         >
             Export CSV
+        </button>
+
+        <button
+            onClick={closeHistory}
+            className="w-full rounded-2xl border border-[#ead8c0] px-5 py-4 font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+        >
+            Tutup
         </button>
         </div>
       </div>
