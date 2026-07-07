@@ -1,3 +1,4 @@
+import { vouchers } from '../data/vouchers'
 import { usePosStore } from '../store/posStore'
 
 const paymentMethods = ['Tunai', 'QRIS', 'Kartu', 'GoPay', 'OVO', 'Dana']
@@ -14,6 +15,10 @@ function CartPanel() {
   const paymentMethod = usePosStore((state) => state.paymentMethod)
   const cashPaid = usePosStore((state) => state.cashPaid)
 
+  const promoCode = usePosStore((state) => state.promoCode)
+  const appliedVoucher = usePosStore((state) => state.appliedVoucher)
+  const promoError = usePosStore((state) => state.promoError)
+
   const lastOrder = usePosStore((state) => state.lastOrder)
 
   const setOrderType = usePosStore((state) => state.setOrderType)
@@ -24,6 +29,10 @@ function CartPanel() {
 
   const setPaymentMethod = usePosStore((state) => state.setPaymentMethod)
   const setCashPaid = usePosStore((state) => state.setCashPaid)
+
+  const setPromoCode = usePosStore((state) => state.setPromoCode)
+  const applyVoucher = usePosStore((state) => state.applyVoucher)
+  const removeVoucher = usePosStore((state) => state.removeVoucher)
 
   const increaseQuantity = usePosStore((state) => state.increaseQuantity)
   const decreaseQuantity = usePosStore((state) => state.decreaseQuantity)
@@ -47,8 +56,28 @@ function CartPanel() {
     return total + item.price * item.quantity
   }, 0)
 
-  const tax = Math.round(subtotal * 0.11)
-  const total = subtotal + tax
+  const calculateDiscount = () => {
+    if (!appliedVoucher) {
+      return 0
+    }
+
+    if (appliedVoucher.type === 'nominal') {
+      return Math.min(appliedVoucher.value, subtotal)
+    }
+
+    const percentDiscount = Math.round(subtotal * (appliedVoucher.value / 100))
+
+    if (appliedVoucher.maxDiscount) {
+      return Math.min(percentDiscount, appliedVoucher.maxDiscount)
+    }
+
+    return percentDiscount
+  }
+
+  const discount = calculateDiscount()
+  const taxableAmount = Math.max(subtotal - discount, 0)
+  const tax = Math.round(taxableAmount * 0.11)
+  const total = taxableAmount + tax
 
   const cashPaidNumber = parseNumber(cashPaid)
   const change = paymentMethod === 'Tunai' ? cashPaidNumber - total : 0
@@ -72,6 +101,16 @@ function CartPanel() {
     setCashPaid(onlyNumber)
   }
 
+  const handleApplyVoucher = () => {
+    const normalizedCode = promoCode.trim().toUpperCase()
+
+    const foundVoucher = vouchers.find(
+      (voucher) => voucher.code === normalizedCode
+    )
+
+    applyVoucher(foundVoucher, subtotal)
+  }
+
   const handleCreateOrder = () => {
     if (!canCreateOrder) {
       return
@@ -79,6 +118,8 @@ function CartPanel() {
 
     createTemporaryOrder({
       subtotal,
+      discount,
+      taxableAmount,
       tax,
       total,
       cashPaid: paymentMethod === 'Tunai' ? cashPaidNumber : total,
@@ -204,6 +245,60 @@ function CartPanel() {
         </div>
 
         <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-4">
+          <p className="mb-3 font-bold text-[#2d1810]">Voucher / Promo</p>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(event) => setPromoCode(event.target.value)}
+              placeholder="Contoh: KOPI10"
+              className="min-w-0 flex-1 rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] uppercase outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+            />
+
+            <button
+              onClick={handleApplyVoucher}
+              className="rounded-2xl bg-[#6f3f24] px-4 py-3 text-sm font-bold text-white hover:bg-[#4b2818]"
+            >
+              Pakai
+            </button>
+          </div>
+
+          {appliedVoucher && (
+            <div className="mt-3 rounded-2xl bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-bold text-[#2d1810]">
+                    {appliedVoucher.name}
+                  </p>
+                  <p className="mt-1 text-xs text-[#7b5d4a]">
+                    Kode: {appliedVoucher.code}
+                  </p>
+                </div>
+
+                <button
+                  onClick={removeVoucher}
+                  className="text-sm font-bold text-red-500"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+          )}
+
+          {promoError && (
+            <p className="mt-2 text-xs font-bold text-red-500">
+              {promoError}
+            </p>
+          )}
+
+          <div className="mt-3 rounded-2xl bg-white p-4 text-xs text-[#7b5d4a]">
+            <p className="font-bold text-[#2d1810]">Kode uji coba:</p>
+            <p>KOPI10, HEMAT5000, LATTE20</p>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-4">
           <p className="mb-3 font-bold text-[#2d1810]">Pembayaran</p>
 
           <div className="grid grid-cols-3 gap-2">
@@ -243,18 +338,11 @@ function CartPanel() {
                 </div>
 
                 <div className="mt-2 flex items-center justify-between font-bold">
-                  <span
-                    className={
-                      change < 0 ? 'text-red-500' : 'text-[#2d1810]'
-                    }
-                  >
+                  <span className={change < 0 ? 'text-red-500' : 'text-[#2d1810]'}>
                     Kembalian
                   </span>
-                  <span
-                    className={
-                      change < 0 ? 'text-red-500' : 'text-[#6f3f24]'
-                    }
-                  >
+
+                  <span className={change < 0 ? 'text-red-500' : 'text-[#6f3f24]'}>
                     {change < 0
                       ? `Kurang ${formatCurrency(Math.abs(change))}`
                       : formatCurrency(change)}
@@ -382,6 +470,13 @@ function CartPanel() {
             <span>Subtotal</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
+
+          {discount > 0 && (
+            <div className="flex items-center justify-between text-sm font-bold text-green-700">
+              <span>Diskon</span>
+              <span>-{formatCurrency(discount)}</span>
+            </div>
+          )}
 
           <div className="flex items-center justify-between text-sm text-[#7b5d4a]">
             <span>PPN 11%</span>

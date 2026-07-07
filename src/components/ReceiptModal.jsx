@@ -149,15 +149,24 @@ function ReceiptModal() {
             <div className="my-5 border-t border-dashed border-[#cdb79e]" />
 
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[#7b5d4a]">Subtotal</span>
-                <span>{formatCurrency(lastOrder.subtotal)}</span>
-              </div>
+                <div className="flex justify-between">
+                    <span className="text-[#7b5d4a]">Subtotal</span>
+                    <span>{formatCurrency(lastOrder.subtotal)}</span>
+                </div>
 
-              <div className="flex justify-between">
-                <span className="text-[#7b5d4a]">PPN 11%</span>
-                <span>{formatCurrency(lastOrder.tax)}</span>
-              </div>
+                {lastOrder.voucher && (
+                    <div className="flex justify-between">
+                    <span className="text-[#7b5d4a]">
+                        Diskon ({lastOrder.voucher.code})
+                    </span>
+                    <span>-{formatCurrency(lastOrder.discount)}</span>
+                    </div>
+                )}
+
+                <div className="flex justify-between">
+                    <span className="text-[#7b5d4a]">PPN 11%</span>
+                    <span>{formatCurrency(lastOrder.tax)}</span>
+                </div>
 
               <div className="border-t border-dashed border-[#cdb79e] pt-3">
                 <div className="flex justify-between text-lg font-black">

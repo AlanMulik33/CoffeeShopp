@@ -12,6 +12,10 @@ export const usePosStore = create((set, get) => ({
   paymentMethod: 'Tunai',
   cashPaid: '',
 
+  promoCode: '',
+  appliedVoucher: null,
+  promoError: '',
+
   nextQueueNumber: 1,
   lastOrder: null,
   receiptOpen: false,
@@ -40,6 +44,53 @@ export const usePosStore = create((set, get) => ({
     }),
 
   setCashPaid: (cashPaid) => set({ cashPaid }),
+
+  setPromoCode: (promoCode) =>
+    set({
+      promoCode,
+      promoError: '',
+    }),
+
+  applyVoucher: (voucher, subtotal) => {
+    if (!voucher) {
+      set({
+        appliedVoucher: null,
+        promoError: 'Kode voucher tidak ditemukan.',
+      })
+      return
+    }
+
+    if (subtotal <= 0) {
+      set({
+        appliedVoucher: null,
+        promoError: 'Tambahkan produk dulu sebelum memakai voucher.',
+      })
+      return
+    }
+
+    if (subtotal < voucher.minimumPurchase) {
+      set({
+        appliedVoucher: null,
+        promoError: `Minimal belanja untuk voucher ini adalah Rp ${voucher.minimumPurchase.toLocaleString(
+          'id-ID'
+        )}.`,
+      })
+      return
+    }
+
+    set({
+      appliedVoucher: voucher,
+      promoCode: voucher.code,
+      promoError: '',
+    })
+  },
+
+  removeVoucher: () =>
+    set({
+      promoCode: '',
+      appliedVoucher: null,
+      promoError: '',
+    }),
 
   closeReceipt: () => set({ receiptOpen: false }),
 
@@ -122,7 +173,14 @@ export const usePosStore = create((set, get) => ({
       cart: state.cart.filter((item) => item.cartKey !== cartKey),
     })),
 
-  clearCart: () => set({ cart: [] }),
+  clearCart: () =>
+    set({
+      cart: [],
+      promoCode: '',
+      appliedVoucher: null,
+      promoError: '',
+      cashPaid: '',
+    }),
 
   createTemporaryOrder: (summary) => {
     const state = get()
@@ -138,8 +196,11 @@ export const usePosStore = create((set, get) => ({
       deliveryAddress: state.deliveryAddress,
       items: state.cart,
       subtotal: summary.subtotal,
+      discount: summary.discount,
+      taxableAmount: summary.taxableAmount,
       tax: summary.tax,
       total: summary.total,
+      voucher: state.appliedVoucher,
       paymentMethod: state.paymentMethod,
       cashPaid: summary.cashPaid,
       change: summary.change,
@@ -156,6 +217,9 @@ export const usePosStore = create((set, get) => ({
       customerPhone: '',
       deliveryAddress: '',
       cashPaid: '',
+      promoCode: '',
+      appliedVoucher: null,
+      promoError: '',
     })
 
     return newOrder
