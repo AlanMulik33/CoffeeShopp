@@ -196,15 +196,15 @@ export const usePosStore = create((set, get) => ({
       deliveryAddress: state.deliveryAddress,
       items: state.cart,
       subtotal: summary.subtotal,
+      voucher: state.appliedVoucher,
+      voucherDiscount: summary.voucherDiscount,
+      happyHourPromo: summary.happyHourPromo,
+      happyHourDiscount: summary.happyHourDiscount,
       discount: summary.discount,
       taxableAmount: summary.taxableAmount,
       tax: summary.tax,
       total: summary.total,
-      voucher: state.appliedVoucher,
       paymentMethod: state.paymentMethod,
-      cashPaid: summary.cashPaid,
-      change: summary.change,
-      createdAt: new Date().toLocaleString('id-ID'),
     }
 
     set({

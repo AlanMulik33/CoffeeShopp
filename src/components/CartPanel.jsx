@@ -1,5 +1,10 @@
+import { happyHourPromos } from '../data/happyHourPromos'
 import { vouchers } from '../data/vouchers'
 import { usePosStore } from '../store/posStore'
+import {
+  calculateHappyHourDiscount,
+  getActiveHappyHourPromo,
+} from '../utils/happyHour'
 
 const paymentMethods = ['Tunai', 'QRIS', 'Kartu', 'GoPay', 'OVO', 'Dana']
 
@@ -56,7 +61,7 @@ function CartPanel() {
     return total + item.price * item.quantity
   }, 0)
 
-  const calculateDiscount = () => {
+  const calculateVoucherDiscount = () => {
     if (!appliedVoucher) {
       return 0
     }
@@ -74,7 +79,11 @@ function CartPanel() {
     return percentDiscount
   }
 
-  const discount = calculateDiscount()
+  const voucherDiscount = calculateVoucherDiscount()
+  const activeHappyHourPromo = getActiveHappyHourPromo(happyHourPromos)
+  const happyHourDiscount = calculateHappyHourDiscount(cart, activeHappyHourPromo)
+
+  const discount = Math.min(voucherDiscount + happyHourDiscount, subtotal)
   const taxableAmount = Math.max(subtotal - discount, 0)
   const tax = Math.round(taxableAmount * 0.11)
   const total = taxableAmount + tax
@@ -118,6 +127,9 @@ function CartPanel() {
 
     createTemporaryOrder({
       subtotal,
+      voucherDiscount,
+      happyHourPromo: activeHappyHourPromo,
+      happyHourDiscount,
       discount,
       taxableAmount,
       tax,
@@ -360,6 +372,44 @@ function CartPanel() {
           )}
         </div>
 
+        <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-4">
+          <p className="mb-3 font-bold text-[#2d1810]">Happy Hour Otomatis</p>
+
+          {activeHappyHourPromo ? (
+            <div className="rounded-2xl bg-white p-4">
+              <p className="font-bold text-[#2d1810]">
+                {activeHappyHourPromo.name}
+              </p>
+
+              <p className="mt-1 text-sm text-[#7b5d4a]">
+                {activeHappyHourPromo.description}
+              </p>
+
+              <p className="mt-2 text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                Aktif {String(activeHappyHourPromo.startHour).padStart(2, '0')}.00 -{' '}
+                {String(activeHappyHourPromo.endHour).padStart(2, '0')}.00
+              </p>
+
+              {happyHourDiscount > 0 ? (
+                <p className="mt-3 font-bold text-green-700">
+                  Diskon aktif: -{formatCurrency(happyHourDiscount)}
+                </p>
+              ) : (
+                <p className="mt-3 text-sm text-[#7b5d4a]">
+                  Promo aktif, tapi belum ada item yang sesuai kategori promo.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-white p-4">
+              <p className="font-bold text-[#2d1810]">Tidak ada promo aktif</p>
+              <p className="mt-1 text-sm text-[#7b5d4a]">
+                Happy Hour akan aktif otomatis sesuai jam yang ditentukan.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div className="mt-5 space-y-4">
           {cart.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-[#ead8c0] bg-[#fffaf3] p-8 text-center">
@@ -471,10 +521,17 @@ function CartPanel() {
             <span>{formatCurrency(subtotal)}</span>
           </div>
 
-          {discount > 0 && (
+          {voucherDiscount > 0 && (
             <div className="flex items-center justify-between text-sm font-bold text-green-700">
-              <span>Diskon</span>
-              <span>-{formatCurrency(discount)}</span>
+              <span>Diskon Voucher</span>
+              <span>-{formatCurrency(voucherDiscount)}</span>
+            </div>
+          )}
+
+          {happyHourDiscount > 0 && (
+            <div className="flex items-center justify-between text-sm font-bold text-green-700">
+              <span>Diskon Happy Hour</span>
+              <span>-{formatCurrency(happyHourDiscount)}</span>
             </div>
           )}
 

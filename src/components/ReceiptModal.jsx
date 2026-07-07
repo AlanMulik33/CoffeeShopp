@@ -154,14 +154,23 @@ function ReceiptModal() {
                     <span>{formatCurrency(lastOrder.subtotal)}</span>
                 </div>
 
-                {lastOrder.voucher && (
+                {lastOrder.voucher && lastOrder.voucherDiscount > 0 && (
                     <div className="flex justify-between">
-                    <span className="text-[#7b5d4a]">
-                        Diskon ({lastOrder.voucher.code})
-                    </span>
-                    <span>-{formatCurrency(lastOrder.discount)}</span>
+                        <span className="text-[#7b5d4a]">
+                        Voucher ({lastOrder.voucher.code})
+                        </span>
+                        <span>-{formatCurrency(lastOrder.voucherDiscount)}</span>
                     </div>
-                )}
+                    )}
+
+                    {lastOrder.happyHourPromo && lastOrder.happyHourDiscount > 0 && (
+                    <div className="flex justify-between">
+                        <span className="text-[#7b5d4a]">
+                        Happy Hour ({lastOrder.happyHourPromo.code})
+                        </span>
+                        <span>-{formatCurrency(lastOrder.happyHourDiscount)}</span>
+                    </div>
+                    )}
 
                 <div className="flex justify-between">
                     <span className="text-[#7b5d4a]">PPN 11%</span>
