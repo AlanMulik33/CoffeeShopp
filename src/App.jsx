@@ -4,6 +4,7 @@ import ProductCard from './components/ProductCard'
 import CartPanel from './components/CartPanel'
 import ProductOptionModal from './components/ProductOptionModal'
 import ReceiptModal from './components/ReceiptModal'
+import OrderHistoryModal from './components/OrderHistoryModal'
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('Semua')
@@ -118,6 +119,7 @@ function App() {
       />
 
       <ReceiptModal />
+      <OrderHistoryModal />
     </>
   )
 }

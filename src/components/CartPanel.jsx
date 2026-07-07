@@ -26,6 +26,9 @@ function CartPanel() {
 
   const lastOrder = usePosStore((state) => state.lastOrder)
 
+  const orderHistory = usePosStore((state) => state.orderHistory)
+  const openHistory = usePosStore((state) => state.openHistory)
+
   const setOrderType = usePosStore((state) => state.setOrderType)
   const setTableNumber = usePosStore((state) => state.setTableNumber)
   const setCustomerName = usePosStore((state) => state.setCustomerName)
@@ -148,6 +151,12 @@ function CartPanel() {
 
         <div className="mt-1 flex items-center justify-between gap-3">
           <h2 className="text-3xl font-black text-[#2d1810]">Keranjang</h2>
+          <button
+            onClick={openHistory}
+            className="mt-4 w-full rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+          >
+            Riwayat Order ({orderHistory.length})
+          </button>
 
           {lastOrder && (
             <div className="rounded-2xl bg-[#fff4e7] px-4 py-2 text-right">

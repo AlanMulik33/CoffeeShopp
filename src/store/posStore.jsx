@@ -18,7 +18,9 @@ export const usePosStore = create((set, get) => ({
 
   nextQueueNumber: 1,
   lastOrder: null,
+  orderHistory: [],
   receiptOpen: false,
+  historyOpen: false,
 
   setOrderType: (orderType) =>
     set({
@@ -93,6 +95,17 @@ export const usePosStore = create((set, get) => ({
     }),
 
   closeReceipt: () => set({ receiptOpen: false }),
+
+  openHistory: () => set({ historyOpen: true }),
+
+  closeHistory: () => set({ historyOpen: false }),
+
+  showReceiptFromHistory: (order) =>
+    set({
+      lastOrder: order,
+      receiptOpen: true,
+      historyOpen: false,
+    }),
 
   addToCart: (product, options) =>
     set((state) => {
@@ -209,6 +222,7 @@ export const usePosStore = create((set, get) => ({
 
     set({
       lastOrder: newOrder,
+      orderHistory: [newOrder, ...state.orderHistory],
       receiptOpen: true,
       nextQueueNumber: state.nextQueueNumber + 1,
       cart: [],
