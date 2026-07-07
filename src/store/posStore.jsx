@@ -93,6 +93,7 @@ export const usePosStore = create(
       receiptOpen: false,
       historyOpen: false,
       dashboardOpen: false,
+      kitchenOpen: false,
 
       reportFilterMode: 'today',
       reportStartDate: getTodayInputValue(),
@@ -179,6 +180,33 @@ export const usePosStore = create(
       openDashboard: () => set({ dashboardOpen: true }),
 
       closeDashboard: () => set({ dashboardOpen: false }),
+
+      openKitchen: () => set({ kitchenOpen: true }),
+
+      closeKitchen: () => set({ kitchenOpen: false }),
+
+      updateOrderStatus: (orderId, status) =>
+        set((state) => {
+          const updateOrder = (order) => {
+            const sameOrder =
+              order.orderId === orderId || order.queueCode === orderId
+
+            if (!sameOrder) {
+              return order
+            }
+
+            return {
+              ...order,
+              status,
+              statusUpdatedAt: new Date().toLocaleString('id-ID'),
+            }
+          }
+
+          return {
+            orderHistory: state.orderHistory.map(updateOrder),
+            lastOrder: state.lastOrder ? updateOrder(state.lastOrder) : null,
+          }
+        }),
 
       setReportFilterMode: (reportFilterMode) =>
         set({
@@ -373,6 +401,11 @@ export const usePosStore = create(
         const now = new Date()
 
         const newOrder = {
+          orderId: crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`,
+          status: 'New',
+          statusUpdatedAt: now.toLocaleString('id-ID'),
           queueCode,
           orderType: state.orderType,
           tableNumber: state.tableNumber,
@@ -452,6 +485,7 @@ export const usePosStore = create(
         state.receiptOpen = false
         state.historyOpen = false
         state.dashboardOpen = false
+        state.kitchenOpen = false
         state.confirmDialog = { ...defaultConfirmDialog }
         state.toasts = []
         state.promoError = ''
