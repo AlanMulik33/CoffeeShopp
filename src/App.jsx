@@ -5,6 +5,7 @@ import CartPanel from './components/CartPanel'
 import ProductOptionModal from './components/ProductOptionModal'
 import ReceiptModal from './components/ReceiptModal'
 import OrderHistoryModal from './components/OrderHistoryModal'
+import ThemeToggle from './components/ThemeToggle'
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('Semua')
@@ -47,11 +48,15 @@ function App() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-[#2d1810] px-5 py-3 text-white">
-                  <p className="text-xs uppercase tracking-widest text-[#d8b98f]">
-                    Kasir
-                  </p>
-                  <p className="font-bold">Agus</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <ThemeToggle />
+
+                  <div className="rounded-2xl bg-[#2d1810] px-5 py-3 text-white">
+                    <p className="text-xs uppercase tracking-widest text-[#d8b98f]">
+                      Kasir
+                    </p>
+                    <p className="font-bold">Agus</p>
+                  </div>
                 </div>
               </div>
 

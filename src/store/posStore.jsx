@@ -2,6 +2,13 @@ import { create } from 'zustand'
 
 export const usePosStore = create((set, get) => ({
   cart: [],
+  theme: localStorage.getItem('coffee-pos-theme') || 'light',
+  toggleTheme: () =>
+    set((state) => {
+      const nextTheme = state.theme === 'light' ? 'dark' : 'light'
+      localStorage.setItem('coffee-pos-theme', nextTheme)
+      return { theme: nextTheme }
+    }),
 
   orderType: 'Dine In',
   tableNumber: '',

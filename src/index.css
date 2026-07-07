@@ -48,3 +48,63 @@ button {
     display: none !important;
   }
 }
+
+html[data-theme='dark'] body {
+  background: #1b100b;
+}
+
+html[data-theme='dark'] main {
+  background: #1b100b;
+  color: #fff4e7;
+}
+
+html[data-theme='dark'] .bg-white {
+  background-color: #2a1810 !important;
+}
+
+html[data-theme='dark'] .bg-\[\#fffaf3\] {
+  background-color: #24140e !important;
+}
+
+html[data-theme='dark'] .bg-\[\#f7efe5\] {
+  background-color: #1b100b !important;
+}
+
+html[data-theme='dark'] .bg-\[\#fff4e7\] {
+  background-color: #3a2418 !important;
+}
+
+html[data-theme='dark'] .text-\[\#2d1810\] {
+  color: #fff4e7 !important;
+}
+
+html[data-theme='dark'] .text-\[\#7b5d4a\] {
+  color: #d8b98f !important;
+}
+
+html[data-theme='dark'] .text-\[\#6f3f24\] {
+  color: #f3c98b !important;
+}
+
+html[data-theme='dark'] .border-\[\#ead8c0\] {
+  border-color: #5a3a29 !important;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] textarea {
+  background-color: #1b100b !important;
+  color: #fff4e7 !important;
+  border-color: #5a3a29 !important;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: #b89678 !important;
+}
+
+html[data-theme='dark'] .shadow-xl,
+html[data-theme='dark'] .shadow-2xl,
+html[data-theme='dark'] .shadow-lg,
+html[data-theme='dark'] .shadow-sm {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+}
