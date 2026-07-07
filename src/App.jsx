@@ -8,6 +8,7 @@ import OrderHistoryModal from './components/OrderHistoryModal'
 import ThemeToggle from './components/ThemeToggle'
 import ConfirmDialog from './components/ConfirmDialog'
 import ToastContainer from './components/ToastContainer'
+import DashboardModal from './components/DashboardModal'
 import { usePosStore } from './store/posStore'
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
   const closeReceipt = usePosStore((state) => state.closeReceipt)
   const closeHistory = usePosStore((state) => state.closeHistory)
   const openHistory = usePosStore((state) => state.openHistory)
+  const openDashboard = usePosStore((state) => state.openDashboard)
   const clearCart = usePosStore((state) => state.clearCart)
   const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
   const addToast = usePosStore((state) => state.addToast)
@@ -112,6 +114,12 @@ function App() {
         return
       }
 
+      if (event.key === 'F3') {
+        event.preventDefault()
+        openDashboard()
+        return
+      }
+
       if (isCtrlOrCommand && event.key === 'Backspace' && !isTyping) {
         event.preventDefault()
 
@@ -151,6 +159,7 @@ function App() {
   cart.length,
   closeReceipt,
   closeHistory,
+  openDashboard,
   openHistory,
   clearCart,
   openConfirmDialog,
@@ -178,6 +187,13 @@ function App() {
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button
+                    onClick={openDashboard}
+                    className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
+                  >
+                    📊 Dashboard
+                  </button>
+
                   <ThemeToggle />
 
                   <div className="rounded-2xl bg-[#2d1810] px-5 py-3 text-white">
@@ -226,6 +242,10 @@ function App() {
 
                   <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
                     F2: Riwayat Order
+                  </span>
+
+                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                    F3: Dashboard
                   </span>
 
                   <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
@@ -281,6 +301,8 @@ function App() {
       <ConfirmDialog />
 
       <ToastContainer />
+
+      <DashboardModal />
     </>
   )
 }

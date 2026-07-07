@@ -91,6 +91,7 @@ export const usePosStore = create(
       orderHistory: [],
       receiptOpen: false,
       historyOpen: false,
+      dashboardOpen: false,
 
       setOrderType: (orderType) =>
         set({
@@ -169,6 +170,10 @@ export const usePosStore = create(
       openHistory: () => set({ historyOpen: true }),
 
       closeHistory: () => set({ historyOpen: false }),
+
+      openDashboard: () => set({ dashboardOpen: true }),
+
+      closeDashboard: () => set({ dashboardOpen: false }),
 
       showReceiptFromHistory: (order) =>
         set({
@@ -332,6 +337,8 @@ export const usePosStore = create(
 
         const queueCode = `A${String(state.nextQueueNumber).padStart(3, '0')}`
 
+        const now = new Date()
+
         const newOrder = {
           queueCode,
           orderType: state.orderType,
@@ -352,7 +359,9 @@ export const usePosStore = create(
           paymentMethod: state.paymentMethod,
           cashPaid: summary.cashPaid,
           change: summary.change,
-          createdAt: new Date().toLocaleString('id-ID'),
+          createdAt: now.toLocaleString('id-ID'),
+          createdAtISO: now.toISOString(),
+          createdHour: now.getHours(),
         }
 
         set({
@@ -405,6 +414,7 @@ export const usePosStore = create(
 
         state.receiptOpen = false
         state.historyOpen = false
+        state.dashboardOpen = false
         state.confirmDialog = { ...defaultConfirmDialog }
         state.toasts = []
         state.promoError = ''
