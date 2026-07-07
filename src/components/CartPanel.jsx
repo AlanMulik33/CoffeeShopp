@@ -47,7 +47,7 @@ function CartPanel() {
         ) : (
           cart.map((item) => (
             <div
-              key={item.id}
+              key={item.cartKey}
               className="rounded-2xl border border-[#ead8c0] bg-[#fffaf3] p-4"
             >
               <div className="flex items-start justify-between gap-3">
@@ -55,13 +55,19 @@ function CartPanel() {
                   <h3 className="font-bold text-[#2d1810]">
                     {item.name}
                   </h3>
-                  <p className="mt-1 text-sm text-[#7b5d4a]">
+
+                  <p className="mt-1 text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                    {item.size}
+                    {item.temperature ? ` • ${item.temperature}` : ''}
+                  </p>
+
+                  <p className="mt-2 text-sm text-[#7b5d4a]">
                     {formatCurrency(item.price)} × {item.quantity}
                   </p>
                 </div>
 
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.cartKey)}
                   className="rounded-full px-3 py-1 text-sm font-bold text-red-500 hover:bg-red-50"
                 >
                   Hapus
@@ -71,7 +77,7 @@ function CartPanel() {
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => decreaseQuantity(item.id)}
+                    onClick={() => decreaseQuantity(item.cartKey)}
                     className="h-9 w-9 rounded-full bg-[#ead8c0] font-bold text-[#2d1810]"
                   >
                     -
@@ -82,7 +88,7 @@ function CartPanel() {
                   </span>
 
                   <button
-                    onClick={() => increaseQuantity(item.id)}
+                    onClick={() => increaseQuantity(item.cartKey)}
                     className="h-9 w-9 rounded-full bg-[#6f3f24] font-bold text-white"
                   >
                     +

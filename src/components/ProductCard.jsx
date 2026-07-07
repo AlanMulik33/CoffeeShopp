@@ -1,8 +1,4 @@
-import { usePosStore } from '../store/posStore'
-
-function ProductCard({ product }) {
-  const addToCart = usePosStore((state) => state.addToCart)
-
+function ProductCard({ product, onSelect }) {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -13,7 +9,7 @@ function ProductCard({ product }) {
 
   return (
     <button
-      onClick={() => addToCart(product)}
+      onClick={() => onSelect(product)}
       className="group rounded-3xl border border-[#ead8c0] bg-white p-4 text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
     >
       <div className="flex h-28 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f8ead8] to-[#d8b98f] text-5xl">
@@ -39,7 +35,7 @@ function ProductCard({ product }) {
           </p>
 
           <span className="rounded-full bg-[#2d1810] px-4 py-2 text-sm font-bold text-white transition group-hover:bg-[#b88746]">
-            Tambah
+            Pilih
           </span>
         </div>
       </div>

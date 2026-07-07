@@ -1,3 +1,13 @@
+const drinkSizes = [
+  { name: 'Small', additionalPrice: 0 },
+  { name: 'Medium', additionalPrice: 3000 },
+  { name: 'Large', additionalPrice: 6000 },
+]
+
+const regularSize = [
+  { name: 'Regular', additionalPrice: 0 },
+]
+
 export const products = [
   {
     id: 1,
@@ -6,6 +16,8 @@ export const products = [
     price: 18000,
     image: '☕',
     description: 'Kopi pekat dengan rasa kuat dan aroma khas.',
+    sizeOptions: drinkSizes,
+    temperatureOptions: ['Hot', 'Iced'],
   },
   {
     id: 2,
@@ -14,6 +26,8 @@ export const products = [
     price: 20000,
     image: '☕',
     description: 'Espresso dengan tambahan air panas.',
+    sizeOptions: drinkSizes,
+    temperatureOptions: ['Hot', 'Iced'],
   },
   {
     id: 3,
@@ -22,6 +36,8 @@ export const products = [
     price: 25000,
     image: '🥛',
     description: 'Espresso, susu, dan foam lembut.',
+    sizeOptions: drinkSizes,
+    temperatureOptions: ['Hot', 'Iced', 'Blend'],
   },
   {
     id: 4,
@@ -30,6 +46,8 @@ export const products = [
     price: 24000,
     image: '☕',
     description: 'Espresso dengan susu dan foam tebal.',
+    sizeOptions: drinkSizes,
+    temperatureOptions: ['Hot', 'Iced'],
   },
   {
     id: 5,
@@ -38,6 +56,8 @@ export const products = [
     price: 28000,
     image: '🫖',
     description: 'Seduhan manual dengan karakter rasa yang lebih kompleks.',
+    sizeOptions: drinkSizes,
+    temperatureOptions: ['Hot', 'Iced'],
   },
   {
     id: 6,
@@ -46,6 +66,8 @@ export const products = [
     price: 23000,
     image: '🍫',
     description: 'Minuman coklat lembut dan manis.',
+    sizeOptions: drinkSizes,
+    temperatureOptions: ['Hot', 'Iced', 'Blend'],
   },
   {
     id: 7,
@@ -54,6 +76,8 @@ export const products = [
     price: 26000,
     image: '🍵',
     description: 'Matcha creamy dengan susu segar.',
+    sizeOptions: drinkSizes,
+    temperatureOptions: ['Hot', 'Iced', 'Blend'],
   },
   {
     id: 8,
@@ -62,5 +86,7 @@ export const products = [
     price: 22000,
     image: '🥐',
     description: 'Pastry renyah cocok untuk teman kopi.',
+    sizeOptions: regularSize,
+    temperatureOptions: [],
   },
 ]
