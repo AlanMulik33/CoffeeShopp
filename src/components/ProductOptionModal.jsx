@@ -6,13 +6,21 @@ function ProductOptionModal({ product, onClose }) {
 
   const [selectedSize, setSelectedSize] = useState('')
   const [selectedTemperature, setSelectedTemperature] = useState('')
+  const [selectedSugar, setSelectedSugar] = useState('')
+  const [selectedIce, setSelectedIce] = useState('')
+  const [selectedAddOns, setSelectedAddOns] = useState([])
   const [quantity, setQuantity] = useState(1)
+  const [note, setNote] = useState('')
 
   useEffect(() => {
     if (product) {
       setSelectedSize(product.sizeOptions?.[0]?.name || '')
       setSelectedTemperature(product.temperatureOptions?.[0] || '')
+      setSelectedSugar(product.sugarOptions?.[0] || '')
+      setSelectedIce(product.iceOptions?.[0] || '')
+      setSelectedAddOns([])
       setQuantity(1)
+      setNote('')
     }
   }, [product])
 
@@ -32,14 +40,42 @@ function ProductOptionModal({ product, onClose }) {
     }).format(value)
   }
 
-  const additionalPrice = selectedSizeData?.additionalPrice || 0
-  const finalPrice = product.price + additionalPrice
+  const showIceOptions =
+    product.iceOptions.length > 0 &&
+    selectedTemperature &&
+    selectedTemperature !== 'Hot'
+
+  const sizeAdditionalPrice = selectedSizeData?.additionalPrice || 0
+
+  const addOnTotal = selectedAddOns.reduce((total, addOn) => {
+    return total + addOn.price
+  }, 0)
+
+  const finalPrice = product.price + sizeAdditionalPrice + addOnTotal
   const lineTotal = finalPrice * quantity
+
+  const toggleAddOn = (addOn) => {
+    const alreadySelected = selectedAddOns.some(
+      (selected) => selected.name === addOn.name
+    )
+
+    if (alreadySelected) {
+      setSelectedAddOns((current) =>
+        current.filter((selected) => selected.name !== addOn.name)
+      )
+    } else {
+      setSelectedAddOns((current) => [...current, addOn])
+    }
+  }
 
   const handleAddToCart = () => {
     addToCart(product, {
       size: selectedSize,
       temperature: selectedTemperature,
+      sugar: selectedSugar,
+      ice: showIceOptions ? selectedIce : '',
+      addOns: selectedAddOns,
+      note: note.trim(),
       quantity,
       finalPrice,
     })
@@ -49,7 +85,7 @@ function ProductOptionModal({ product, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-3xl bg-[#fffaf3] shadow-2xl">
+      <div className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-[#fffaf3] shadow-2xl">
         <div className="border-b border-[#ead8c0] p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -73,7 +109,7 @@ function ProductOptionModal({ product, onClose }) {
           </div>
         </div>
 
-        <div className="space-y-6 p-6">
+        <div className="max-h-[60vh] space-y-6 overflow-y-auto p-6">
           <div>
             <p className="mb-3 font-bold text-[#2d1810]">Ukuran</p>
 
@@ -121,6 +157,92 @@ function ProductOptionModal({ product, onClose }) {
             </div>
           )}
 
+          {product.sugarOptions.length > 0 && (
+            <div>
+              <p className="mb-3 font-bold text-[#2d1810]">Sugar Level</p>
+
+              <div className="grid grid-cols-3 gap-3">
+                {product.sugarOptions.map((sugar) => (
+                  <button
+                    key={sugar}
+                    onClick={() => setSelectedSugar(sugar)}
+                    className={`rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+                      selectedSugar === sugar
+                        ? 'border-[#2d1810] bg-[#2d1810] text-white'
+                        : 'border-[#ead8c0] bg-white text-[#6f3f24] hover:bg-[#fff4e7]'
+                    }`}
+                  >
+                    {sugar}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showIceOptions && (
+            <div>
+              <p className="mb-3 font-bold text-[#2d1810]">Ice Level</p>
+
+              <div className="grid grid-cols-3 gap-3">
+                {product.iceOptions.map((ice) => (
+                  <button
+                    key={ice}
+                    onClick={() => setSelectedIce(ice)}
+                    className={`rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+                      selectedIce === ice
+                        ? 'border-[#2d1810] bg-[#2d1810] text-white'
+                        : 'border-[#ead8c0] bg-white text-[#6f3f24] hover:bg-[#fff4e7]'
+                    }`}
+                  >
+                    {ice}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {product.addOnOptions.length > 0 && (
+            <div>
+              <p className="mb-3 font-bold text-[#2d1810]">Add-on</p>
+
+              <div className="grid grid-cols-2 gap-3">
+                {product.addOnOptions.map((addOn) => {
+                  const active = selectedAddOns.some(
+                    (selected) => selected.name === addOn.name
+                  )
+
+                  return (
+                    <button
+                      key={addOn.name}
+                      onClick={() => toggleAddOn(addOn)}
+                      className={`rounded-2xl border px-4 py-3 text-left text-sm font-bold transition ${
+                        active
+                          ? 'border-[#2d1810] bg-[#2d1810] text-white'
+                          : 'border-[#ead8c0] bg-white text-[#6f3f24] hover:bg-[#fff4e7]'
+                      }`}
+                    >
+                      <span className="block">{addOn.name}</span>
+                      <span className="mt-1 block text-xs opacity-80">
+                        +{formatCurrency(addOn.price)}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <p className="mb-3 font-bold text-[#2d1810]">Catatan Khusus</p>
+
+            <textarea
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Contoh: less sugar, no ice, jangan terlalu panas..."
+              className="min-h-24 w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+            />
+          </div>
+
           <div>
             <p className="mb-3 font-bold text-[#2d1810]">Jumlah</p>
 
@@ -147,13 +269,30 @@ function ProductOptionModal({ product, onClose }) {
 
           <div className="rounded-2xl bg-white p-4">
             <div className="flex items-center justify-between text-sm text-[#7b5d4a]">
-              <span>Harga satuan</span>
-              <span>{formatCurrency(finalPrice)}</span>
+              <span>Harga dasar</span>
+              <span>{formatCurrency(product.price)}</span>
             </div>
 
-            <div className="mt-2 flex items-center justify-between text-xl font-black text-[#2d1810]">
-              <span>Total item</span>
-              <span>{formatCurrency(lineTotal)}</span>
+            <div className="mt-2 flex items-center justify-between text-sm text-[#7b5d4a]">
+              <span>Tambahan ukuran</span>
+              <span>{formatCurrency(sizeAdditionalPrice)}</span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between text-sm text-[#7b5d4a]">
+              <span>Add-on</span>
+              <span>{formatCurrency(addOnTotal)}</span>
+            </div>
+
+            <div className="mt-3 border-t border-dashed border-[#ead8c0] pt-3">
+              <div className="flex items-center justify-between text-sm text-[#7b5d4a]">
+                <span>Harga satuan</span>
+                <span>{formatCurrency(finalPrice)}</span>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between text-xl font-black text-[#2d1810]">
+                <span>Total item</span>
+                <span>{formatCurrency(lineTotal)}</span>
+              </div>
             </div>
           </div>
         </div>

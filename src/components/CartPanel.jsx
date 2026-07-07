@@ -61,6 +61,24 @@ function CartPanel() {
                     {item.temperature ? ` • ${item.temperature}` : ''}
                   </p>
 
+                  <div className="mt-2 space-y-1 text-xs text-[#7b5d4a]">
+                    {item.sugar && <p>{item.sugar}</p>}
+                    {item.ice && <p>{item.ice}</p>}
+
+                    {item.addOns.length > 0 && (
+                      <p>
+                        Add-on:{' '}
+                        {item.addOns.map((addOn) => addOn.name).join(', ')}
+                      </p>
+                    )}
+
+                    {item.note && (
+                      <p className="italic">
+                        Catatan: {item.note}
+                      </p>
+                    )}
+                  </div>
+
                   <p className="mt-2 text-sm text-[#7b5d4a]">
                     {formatCurrency(item.price)} × {item.quantity}
                   </p>

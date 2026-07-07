@@ -5,7 +5,23 @@ export const usePosStore = create((set) => ({
 
   addToCart: (product, options) =>
     set((state) => {
-      const cartKey = `${product.id}-${options.size}-${options.temperature || 'none'}`
+      const addOnKey =
+        options.addOns
+          ?.map((addOn) => addOn.name)
+          .sort()
+          .join('|') || 'none'
+
+      const noteKey = options.note?.trim().toLowerCase() || 'none'
+
+      const cartKey = [
+        product.id,
+        options.size || 'none',
+        options.temperature || 'none',
+        options.sugar || 'none',
+        options.ice || 'none',
+        addOnKey,
+        noteKey,
+      ].join('-')
 
       const existingItem = state.cart.find((item) => item.cartKey === cartKey)
 
@@ -29,6 +45,10 @@ export const usePosStore = create((set) => ({
         price: options.finalPrice,
         size: options.size,
         temperature: options.temperature,
+        sugar: options.sugar,
+        ice: options.ice,
+        addOns: options.addOns,
+        note: options.note,
         quantity: options.quantity,
       }
 
