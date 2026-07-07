@@ -1,4 +1,5 @@
 import { usePosStore } from '../store/posStore'
+import OrderStatusBadge from './OrderStatusBadge'
 
 function ReceiptModal() {
   const lastOrder = usePosStore((state) => state.lastOrder)
@@ -62,6 +63,11 @@ function ReceiptModal() {
               <div className="flex justify-between gap-3">
                 <span className="text-[#7b5d4a]">No. Antrian</span>
                 <span className="font-black">{lastOrder.queueCode}</span>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[#7b5d4a]">Status</span>
+                <OrderStatusBadge status={lastOrder.status || 'New'} />
               </div>
 
               <div className="flex justify-between gap-3">

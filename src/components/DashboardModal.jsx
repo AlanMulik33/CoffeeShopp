@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { usePosStore } from '../store/posStore'
 import ReportDateFilter from './ReportDateFilter'
+import OrderStatusBadge from './OrderStatusBadge'
 import { filterOrdersByDate } from '../utils/dateFilter'
 
 function DashboardModal() {
@@ -88,6 +89,28 @@ function DashboardModal() {
 
     const topPayment = paymentStats[0] || null
 
+    const statusMap = {
+        New: 0,
+        Preparing: 0,
+        Ready: 0,
+        Completed: 0,
+        }
+
+        filteredOrders.forEach((order) => {
+        const status = order.status || 'New'
+
+        if (!statusMap[status]) {
+            statusMap[status] = 0
+        }
+
+        statusMap[status] += 1
+        })
+
+        const statusStats = Object.entries(statusMap).map(([status, count]) => ({
+        status,
+        count,
+        }))
+
     const hourlySales = Array.from({ length: 24 }, (_, hour) => ({
     hour,
     label: `${String(hour).padStart(2, '0')}:00`,
@@ -141,6 +164,7 @@ function DashboardModal() {
     bestSeller,
     paymentStats,
     topPayment,
+    statusStats,
     hourlySales,
     activeHourlySales,
     maxHourlyRevenue,
@@ -272,6 +296,41 @@ function DashboardModal() {
               </p>
             </div>
           </div>
+
+          <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
+            <div className="mb-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                Order Status
+                </p>
+
+                <h3 className="mt-1 text-xl font-black text-[#2d1810]">
+                Status Antrian Order
+                </h3>
+
+                <p className="mt-1 text-sm text-[#7b5d4a]">
+                Ringkasan status order dari Kitchen Display.
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                {dashboardData.statusStats.map((item) => (
+                <div
+                    key={item.status}
+                    className="rounded-2xl border border-[#ead8c0] bg-white p-4"
+                >
+                    <OrderStatusBadge status={item.status} />
+
+                    <p className="mt-3 text-3xl font-black text-[#2d1810]">
+                    {item.count}
+                    </p>
+
+                    <p className="mt-1 text-sm text-[#7b5d4a]">
+                    order
+                    </p>
+                </div>
+                ))}
+            </div>
+            </div>
 
           <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
             <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-end">
@@ -484,15 +543,17 @@ function DashboardModal() {
                     className="flex flex-col justify-between gap-3 rounded-2xl bg-white p-4 md:flex-row md:items-center"
                   >
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
-                        {order.queueCode}
-                      </p>
-                      <p className="mt-1 font-black text-[#2d1810]">
+                        <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                            {order.queueCode}
+                        </p>
+
+                        <OrderStatusBadge status={order.status || 'New'} />
+                        </div>
+
+                        <p className="mt-2 font-black text-[#2d1810]">
                         {order.orderType} • {order.paymentMethod}
-                      </p>
-                      <p className="mt-1 text-sm text-[#7b5d4a]">
-                        {order.createdAt}
-                      </p>
+                        </p>
                     </div>
 
                     <div className="flex items-center justify-between gap-4 md:justify-end">

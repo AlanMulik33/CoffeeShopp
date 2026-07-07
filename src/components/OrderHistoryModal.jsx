@@ -1,5 +1,6 @@
 import { usePosStore } from '../store/posStore'
 import ReportDateFilter from './ReportDateFilter'
+import OrderStatusBadge from './OrderStatusBadge'
 import { filterOrdersByDate } from '../utils/dateFilter'
 
 function OrderHistoryModal() {
@@ -37,22 +38,24 @@ function OrderHistoryModal() {
         return
     }
 
-    const headers = [
-        'Nomor Antrian',
-        'Waktu',
-        'Tipe Order',
-        'Nomor Meja',
-        'Nama Pelanggan',
-        'No HP',
-        'Alamat Delivery',
-        'Metode Pembayaran',
-        'Subtotal',
-        'Diskon Voucher',
-        'Diskon Happy Hour',
-        'Total Diskon',
-        'PPN',
-        'Total',
-        'Item',
+  const headers = [
+    'Nomor Antrian',
+    'Status',
+    'Update Status',
+    'Waktu',
+    'Tipe Order',
+    'Nomor Meja',
+    'Nama Pelanggan',
+    'No HP',
+    'Alamat Delivery',
+    'Metode Pembayaran',
+    'Subtotal',
+    'Diskon Voucher',
+    'Diskon Happy Hour',
+    'Total Diskon',
+    'PPN',
+    'Total',
+    'Item',
     ]
 
     const escapeCSV = (value) => {
@@ -82,6 +85,8 @@ function OrderHistoryModal() {
 
         return [
         order.queueCode,
+        order.status || 'New',
+        order.statusUpdatedAt || '',
         order.createdAt,
         order.orderType,
         order.tableNumber || '',
@@ -207,20 +212,30 @@ function OrderHistoryModal() {
                 >
                   <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
-                        {order.queueCode}
-                      </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                            {order.queueCode}
+                        </p>
 
-                      <h3 className="mt-1 text-xl font-black text-[#2d1810]">
+                        <OrderStatusBadge status={order.status || 'New'} />
+                        </div>
+
+                        <h3 className="mt-2 text-xl font-black text-[#2d1810]">
                         {order.orderType}
                         {order.orderType === 'Dine In' && order.tableNumber
-                          ? ` • Meja ${order.tableNumber}`
-                          : ''}
-                      </h3>
+                            ? ` • Meja ${order.tableNumber}`
+                            : ''}
+                        </h3>
 
                       <p className="mt-1 text-sm text-[#7b5d4a]">
                         {order.createdAt}
                       </p>
+
+                      {order.statusUpdatedAt && (
+                        <p className="mt-1 text-xs text-[#7b5d4a]">
+                            Update status: {order.statusUpdatedAt}
+                        </p>
+                        )}
 
                       <p className="mt-2 text-sm text-[#7b5d4a]">
                         {order.items.length} jenis item • {order.paymentMethod}
