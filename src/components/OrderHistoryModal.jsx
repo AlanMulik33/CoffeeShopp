@@ -191,7 +191,7 @@ function OrderHistoryModal() {
           </div>
         </div>
 
-        <div className="coffee-scrollbar max-h-[70vh] overflow-y-auto p-6">
+          <div className="coffee-scrollbar min-h-0 flex-1 overflow-y-auto p-6">      
             <ReportDateFilter totalData={filteredOrders.length} />
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="rounded-3xl bg-[#fffaf3] p-5">

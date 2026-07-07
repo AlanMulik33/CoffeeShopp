@@ -216,7 +216,7 @@ function DashboardModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
         <div className="border-b border-[#ead8c0] p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -242,7 +242,7 @@ function DashboardModal() {
           </div>
         </div>
 
-        <div className="coffee-scrollbar max-h-[74vh] overflow-y-auto p-6">
+        <div className="coffee-scrollbar min-h-0 flex-1 overflow-y-auto p-6">
             <ReportDateFilter totalData={dashboardData.filteredOrders.length} />
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
