@@ -12,11 +12,94 @@ const regularSize = [{ name: 'Regular', additionalPrice: 0 }]
 const sugarOptions = ['Normal Sugar', 'Less Sugar', 'No Sugar']
 const iceOptions = ['Normal Ice', 'Less Ice', 'No Ice']
 
-const defaultCoffeeAddOns = [
+const defaultAddOns = [
   { name: 'Extra Shot', price: 5000 },
   { name: 'Vanilla Syrup', price: 4000 },
   { name: 'Caramel Syrup', price: 4000 },
 ]
+
+const sizeOptionsToText = (sizeOptions = []) => {
+  return sizeOptions
+    .map((size) => `${size.name}:${size.additionalPrice || 0}`)
+    .join('\n')
+}
+
+const addOnOptionsToText = (addOnOptions = []) => {
+  return addOnOptions
+    .map((addOn) => `${addOn.name}:${addOn.price || 0}`)
+    .join('\n')
+}
+
+const listToText = (items = []) => {
+  return items.join(', ')
+}
+
+const parseListText = (text) => {
+  return text
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+const parseSizeOptions = (text, fallback = regularSize) => {
+  const parsed = text
+    .split('\n')
+    .map((line) => {
+      const [namePart, pricePart] = line.split(':')
+      const name = namePart?.trim()
+      const additionalPrice = Number(pricePart?.trim() || 0)
+
+      if (!name) {
+        return null
+      }
+
+      return {
+        name,
+        additionalPrice: Number.isFinite(additionalPrice)
+          ? additionalPrice
+          : 0,
+      }
+    })
+    .filter(Boolean)
+
+  return parsed.length > 0 ? parsed : fallback
+}
+
+const parseAddOnOptions = (text) => {
+  return text
+    .split('\n')
+    .map((line) => {
+      const [namePart, pricePart] = line.split(':')
+      const name = namePart?.trim()
+      const price = Number(pricePart?.trim() || 0)
+
+      if (!name) {
+        return null
+      }
+
+      return {
+        name,
+        price: Number.isFinite(price) ? price : 0,
+      }
+    })
+    .filter(Boolean)
+}
+
+const drinkOptionForm = {
+  sizeOptionsText: sizeOptionsToText(drinkSizes),
+  temperatureOptionsText: 'Hot, Iced',
+  sugarOptionsText: listToText(sugarOptions),
+  iceOptionsText: listToText(iceOptions),
+  addOnOptionsText: addOnOptionsToText(defaultAddOns),
+}
+
+const foodOptionForm = {
+  sizeOptionsText: sizeOptionsToText(regularSize),
+  temperatureOptionsText: '',
+  sugarOptionsText: '',
+  iceOptionsText: '',
+  addOnOptionsText: '',
+}
 
 const emptyForm = {
   name: '',
@@ -24,6 +107,7 @@ const emptyForm = {
   price: '',
   image: '☕',
   description: '',
+  ...drinkOptionForm,
 }
 
 function ProductAdminModal() {
@@ -73,6 +157,17 @@ function ProductAdminModal() {
     }))
   }
 
+  const handleCategoryChange = (category) => {
+    const optionPreset = category === 'Makanan' ? foodOptionForm : drinkOptionForm
+
+    setForm((current) => ({
+      ...current,
+      category,
+      image: category === 'Makanan' && current.image === '☕' ? '🥐' : current.image,
+      ...optionPreset,
+    }))
+  }
+
   const resetForm = () => {
     setEditingProduct(null)
     setForm(emptyForm)
@@ -82,31 +177,31 @@ function ProductAdminModal() {
     setEditingProduct(product)
 
     setForm({
-      name: product.name,
-      category: product.category,
-      price: String(product.price),
-      image: product.image,
-      description: product.description,
+      name: product.name || '',
+      category: product.category || 'Espresso',
+      price: String(product.price || ''),
+      image: product.image || '☕',
+      description: product.description || '',
+      sizeOptionsText: sizeOptionsToText(
+        product.sizeOptions?.length ? product.sizeOptions : regularSize
+      ),
+      temperatureOptionsText: listToText(product.temperatureOptions || []),
+      sugarOptionsText: listToText(product.sugarOptions || []),
+      iceOptionsText: listToText(product.iceOptions || []),
+      addOnOptionsText: addOnOptionsToText(product.addOnOptions || []),
     })
   }
 
-  const buildProductOptions = (category) => {
-    if (category === 'Makanan') {
-      return {
-        sizeOptions: regularSize,
-        temperatureOptions: [],
-        sugarOptions: [],
-        iceOptions: [],
-        addOnOptions: [],
-      }
-    }
+  const buildOptionsFromForm = () => {
+    const fallbackSize =
+      form.category === 'Makanan' ? regularSize : drinkSizes
 
     return {
-      sizeOptions: drinkSizes,
-      temperatureOptions: ['Hot', 'Iced'],
-      sugarOptions,
-      iceOptions,
-      addOnOptions: defaultCoffeeAddOns,
+      sizeOptions: parseSizeOptions(form.sizeOptionsText, fallbackSize),
+      temperatureOptions: parseListText(form.temperatureOptionsText),
+      sugarOptions: parseListText(form.sugarOptionsText),
+      iceOptions: parseListText(form.iceOptionsText),
+      addOnOptions: parseAddOnOptions(form.addOnOptionsText),
     }
   }
 
@@ -133,6 +228,8 @@ function ProductAdminModal() {
       return
     }
 
+    const optionData = buildOptionsFromForm()
+
     if (editingProduct) {
       updateProduct(editingProduct.id, {
         name: form.name.trim(),
@@ -140,6 +237,7 @@ function ProductAdminModal() {
         price,
         image: form.image.trim() || '☕',
         description: form.description.trim(),
+        ...optionData,
       })
 
       addToast({
@@ -152,15 +250,13 @@ function ProductAdminModal() {
       return
     }
 
-    const optionPreset = buildProductOptions(form.category)
-
     addProduct({
       name: form.name.trim(),
       category: form.category,
       price,
       image: form.image.trim() || '☕',
       description: form.description.trim(),
-      ...optionPreset,
+      ...optionData,
     })
 
     addToast({
@@ -223,7 +319,7 @@ function ProductAdminModal() {
               </h2>
 
               <p className="mt-2 text-sm text-[#7b5d4a]">
-                Tambah, edit, hapus, dan atur status produk dari aplikasi.
+                Tambah, edit, hapus, status produk, dan opsi custom order.
               </p>
             </div>
 
@@ -237,7 +333,7 @@ function ProductAdminModal() {
         </div>
 
         <div className="coffee-scrollbar min-h-0 flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[380px_1fr]">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[420px_1fr]">
             <form
               onSubmit={handleSubmit}
               className="rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5"
@@ -272,7 +368,7 @@ function ProductAdminModal() {
                   <select
                     value={form.category}
                     onChange={(event) =>
-                      handleChange('category', event.target.value)
+                      handleCategoryChange(event.target.value)
                     }
                     className="w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
                   >
@@ -285,7 +381,7 @@ function ProductAdminModal() {
 
                 <div>
                   <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#b88746]">
-                    Harga
+                    Harga Dasar
                   </label>
                   <input
                     type="number"
@@ -324,6 +420,97 @@ function ProductAdminModal() {
                     className="min-h-24 w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
                     placeholder="Deskripsi singkat produk..."
                   />
+                </div>
+
+                <div className="rounded-3xl border border-[#ead8c0] bg-white p-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                    Opsi Custom Order
+                  </p>
+
+                  <p className="mt-1 text-xs text-[#7b5d4a]">
+                    Format harga tambahan gunakan tanda titik dua.
+                  </p>
+
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                        Size & Tambahan Harga
+                      </label>
+                      <textarea
+                        value={form.sizeOptionsText}
+                        onChange={(event) =>
+                          handleChange('sizeOptionsText', event.target.value)
+                        }
+                        className="min-h-24 w-full rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                        placeholder={'Small:0\nMedium:3000\nLarge:6000'}
+                      />
+                      <p className="mt-1 text-xs text-[#7b5d4a]">
+                        Contoh: Small:0, Medium:3000, Large:6000
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                        Opsi Suhu
+                      </label>
+                      <input
+                        value={form.temperatureOptionsText}
+                        onChange={(event) =>
+                          handleChange(
+                            'temperatureOptionsText',
+                            event.target.value
+                          )
+                        }
+                        className="w-full rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                        placeholder="Hot, Iced, Blend"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                        Sugar Level
+                      </label>
+                      <input
+                        value={form.sugarOptionsText}
+                        onChange={(event) =>
+                          handleChange('sugarOptionsText', event.target.value)
+                        }
+                        className="w-full rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                        placeholder="Normal Sugar, Less Sugar, No Sugar"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                        Ice Level
+                      </label>
+                      <input
+                        value={form.iceOptionsText}
+                        onChange={(event) =>
+                          handleChange('iceOptionsText', event.target.value)
+                        }
+                        className="w-full rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                        placeholder="Normal Ice, Less Ice, No Ice"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                        Add-on & Harga
+                      </label>
+                      <textarea
+                        value={form.addOnOptionsText}
+                        onChange={(event) =>
+                          handleChange('addOnOptionsText', event.target.value)
+                        }
+                        className="min-h-24 w-full rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                        placeholder={'Extra Shot:5000\nVanilla Syrup:4000'}
+                      />
+                      <p className="mt-1 text-xs text-[#7b5d4a]">
+                        Satu add-on per baris. Contoh: Extra Shot:5000
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -400,19 +587,22 @@ function ProductAdminModal() {
                                     : 'bg-red-50 text-red-500'
                                 }`}
                               >
-                                {product.isAvailable
-                                  ? 'Tersedia'
-                                  : 'Habis'}
+                                {product.isAvailable ? 'Tersedia' : 'Habis'}
                               </span>
                             </div>
 
                             <p className="mt-1 text-sm text-[#7b5d4a]">
-                              {product.category} •{' '}
-                              {formatCurrency(product.price)}
+                              {product.category} • {formatCurrency(product.price)}
                             </p>
 
                             <p className="mt-1 line-clamp-1 text-xs text-[#7b5d4a]">
                               {product.description}
+                            </p>
+
+                            <p className="mt-2 text-xs text-[#7b5d4a]">
+                              {(product.sizeOptions || []).length} size •{' '}
+                              {(product.temperatureOptions || []).length} suhu •{' '}
+                              {(product.addOnOptions || []).length} add-on
                             </p>
                           </div>
                         </div>
