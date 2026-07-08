@@ -105,6 +105,9 @@ export const usePosStore = create(
       dashboardOpen: false,
       kitchenOpen: false,
       productAdminOpen: false,
+      stockReportOpen: false,
+
+      lowStockThreshold: 5,
 
       productCatalog: normalizeProductStock(initialProducts),
 
@@ -201,6 +204,15 @@ export const usePosStore = create(
       openProductAdmin: () => set({ productAdminOpen: true }),
 
       closeProductAdmin: () => set({ productAdminOpen: false }),
+
+      openStockReport: () => set({ stockReportOpen: true }),
+
+      closeStockReport: () => set({ stockReportOpen: false }),
+
+      setLowStockThreshold: (lowStockThreshold) =>
+        set({
+          lowStockThreshold: Math.max(1, Number(lowStockThreshold || 1)),
+        }),
 
       addProduct: (product) =>
         set((state) => {
@@ -618,6 +630,7 @@ export const usePosStore = create(
         theme: state.theme,
 
         productCatalog: state.productCatalog,
+        lowStockThreshold: state.lowStockThreshold,
 
         orderType: state.orderType,
         tableNumber: state.tableNumber,
@@ -653,6 +666,7 @@ export const usePosStore = create(
         state.dashboardOpen = false
         state.kitchenOpen = false
         state.productAdminOpen = false
+        state.stockReportOpen = false
         state.confirmDialog = { ...defaultConfirmDialog }
         state.toasts = []
         state.promoError = ''

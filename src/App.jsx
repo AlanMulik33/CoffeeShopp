@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 // import { products } from './data/products'
 import ProductAdminModal from './components/ProductAdminModal'
+import StockReportModal from './components/StockReportModal'
 import ProductCard from './components/ProductCard'
 import CartPanel from './components/CartPanel'
 import ProductOptionModal from './components/ProductOptionModal'
@@ -29,6 +30,7 @@ function App() {
   const openDashboard = usePosStore((state) => state.openDashboard)
   const openKitchen = usePosStore((state) => state.openKitchen)
   const openProductAdmin = usePosStore((state) => state.openProductAdmin)
+  const openStockReport = usePosStore((state) => state.openStockReport)
   const products = usePosStore((state) => state.productCatalog)
   const clearCart = usePosStore((state) => state.clearCart)
   const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
@@ -137,6 +139,12 @@ function App() {
         return
       }
 
+      if (event.key === 'F6') {
+        event.preventDefault()
+        openStockReport()
+        return
+      }
+
       if (isCtrlOrCommand && event.key === 'Backspace' && !isTyping) {
         event.preventDefault()
 
@@ -183,6 +191,7 @@ function App() {
   addToast,
   openKitchen,
   openProductAdmin,
+  openStockReport,
 ])
 
   return (
@@ -225,6 +234,13 @@ function App() {
                     className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
                   >
                     📦 Produk
+                  </button>
+
+                  <button
+                    onClick={openStockReport}
+                    className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
+                  >
+                    📦 Stok
                   </button>
 
                   <ThemeToggle />
@@ -290,6 +306,10 @@ function App() {
                   </span>
 
                   <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                    F6: Stok
+                  </span>
+
+                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
                     Ctrl + Backspace: Kosongkan Keranjang
                   </span>
                 </div>
@@ -348,6 +368,8 @@ function App() {
       <KitchenDisplayModal />
 
       <ProductAdminModal />
+
+      <StockReportModal />
     </>
   )
 }
