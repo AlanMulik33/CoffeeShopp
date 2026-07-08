@@ -3,6 +3,15 @@ import { persist } from 'zustand/middleware'
 import { getTodayInputValue } from '../utils/dateFilter'
 import { products as initialProducts } from '../data/products'
 
+const normalizeProductStock = (products) => {
+  return products.map((product) => ({
+    ...product,
+    stock: product.stock ?? 20,
+    isAvailable:
+      product.stock === 0 ? false : product.isAvailable ?? true,
+  }))
+}
+
 const defaultConfirmDialog = {
   isOpen: false,
   title: '',
@@ -97,7 +106,7 @@ export const usePosStore = create(
       kitchenOpen: false,
       productAdminOpen: false,
 
-      productCatalog: initialProducts,
+      productCatalog: normalizeProductStock(initialProducts),
 
       reportFilterMode: 'today',
       reportStartDate: getTodayInputValue(),
@@ -195,10 +204,13 @@ export const usePosStore = create(
 
       addProduct: (product) =>
         set((state) => {
+          const stock = Number(product.stock || 0)
+
           const newProduct = {
             ...product,
             id: Date.now(),
-            isAvailable: true,
+            stock,
+            isAvailable: stock > 0,
           }
 
           return {
@@ -228,6 +240,23 @@ export const usePosStore = create(
                 }
               : product
           ),
+        })),
+
+      updateProductStock: (productId, stock) =>
+        set((state) => ({
+          productCatalog: state.productCatalog.map((product) => {
+            if (product.id !== productId) {
+              return product
+            }
+
+            const newStock = Math.max(0, Number(stock || 0))
+
+            return {
+              ...product,
+              stock: newStock,
+              isAvailable: newStock > 0 ? product.isAvailable : false,
+            }
+          }),
         })),
 
       deleteProduct: (productId) =>
@@ -537,11 +566,36 @@ export const usePosStore = create(
           createdHour: now.getHours(),
         }
 
+        const soldQuantityMap = {}
+
+        state.cart.forEach((item) => {
+          soldQuantityMap[item.productId] =
+            (soldQuantityMap[item.productId] || 0) + item.quantity
+        })
+
+        const updatedProductCatalog = state.productCatalog.map((product) => {
+          const soldQuantity = soldQuantityMap[product.id] || 0
+
+          if (soldQuantity <= 0) {
+            return product
+          }
+
+          const currentStock = product.stock ?? 0
+          const newStock = Math.max(0, currentStock - soldQuantity)
+
+          return {
+            ...product,
+            stock: newStock,
+            isAvailable: newStock > 0 ? product.isAvailable : false,
+          }
+        })
+
         set({
           lastOrder: newOrder,
           orderHistory: [newOrder, ...state.orderHistory],
           receiptOpen: true,
           nextQueueNumber: state.nextQueueNumber + 1,
+          productCatalog: updatedProductCatalog,
           cart: [],
           tableNumber: '',
           customerName: '',
@@ -590,6 +644,9 @@ export const usePosStore = create(
         if (!state) {
           return
         }
+        state.productCatalog = normalizeProductStock(
+          state.productCatalog?.length ? state.productCatalog : initialProducts
+        )
 
         state.receiptOpen = false
         state.historyOpen = false

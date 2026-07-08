@@ -105,6 +105,7 @@ const emptyForm = {
   name: '',
   category: 'Espresso',
   price: '',
+  stock: '20',
   image: '☕',
   description: '',
   ...drinkOptionForm,
@@ -180,6 +181,7 @@ function ProductAdminModal() {
       name: product.name || '',
       category: product.category || 'Espresso',
       price: String(product.price || ''),
+      stock: String(product.stock ?? 0),
       image: product.image || '☕',
       description: product.description || '',
       sizeOptionsText: sizeOptionsToText(
@@ -209,7 +211,7 @@ function ProductAdminModal() {
     event.preventDefault()
 
     const price = Number(form.price)
-
+    const stock = Math.max(0, Number(form.stock || 0))
     if (!form.name.trim()) {
       addToast({
         title: 'Nama produk kosong',
@@ -235,6 +237,8 @@ function ProductAdminModal() {
         name: form.name.trim(),
         category: form.category,
         price,
+        stock,
+        isAvailable: stock > 0 ? editingProduct.isAvailable : false,
         image: form.image.trim() || '☕',
         description: form.description.trim(),
         ...optionData,
@@ -254,6 +258,7 @@ function ProductAdminModal() {
       name: form.name.trim(),
       category: form.category,
       price,
+      stock,
       image: form.image.trim() || '☕',
       description: form.description.trim(),
       ...optionData,
@@ -392,6 +397,25 @@ function ProductAdminModal() {
                     className="w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
                     placeholder="25000"
                   />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                    Stok Produk
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.stock}
+                    onChange={(event) => handleChange('stock', event.target.value)}
+                    className="w-full rounded-2xl border border-[#ead8c0] bg-white px-4 py-3 text-[#2d1810] outline-none focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                    placeholder="20"
+                  />
+
+                  <p className="mt-1 text-xs text-[#7b5d4a]">
+                    Jika stok 0, produk otomatis menjadi habis.
+                  </p>
                 </div>
 
                 <div>
@@ -592,7 +616,7 @@ function ProductAdminModal() {
                             </div>
 
                             <p className="mt-1 text-sm text-[#7b5d4a]">
-                              {product.category} • {formatCurrency(product.price)}
+                              {product.category} • {formatCurrency(product.price)} • Stok {product.stock ?? 0}
                             </p>
 
                             <p className="mt-1 line-clamp-1 text-xs text-[#7b5d4a]">
@@ -616,10 +640,21 @@ function ProductAdminModal() {
                           </button>
 
                           <button
-                            onClick={() => handleToggleAvailability(product)}
+                            onClick={() => {
+                                if ((product.stock ?? 0) <= 0 && !product.isAvailable) {
+                                  addToast({
+                                    title: 'Stok masih kosong',
+                                    message: 'Tambahkan stok dulu sebelum produk dibuat tersedia.',
+                                    type: 'warning',
+                                  })
+                                  return
+                                }
+
+                                handleToggleAvailability(product)
+                              }}
                             className="rounded-2xl border border-[#ead8c0] px-3 py-3 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
                           >
-                            {product.isAvailable ? 'Habis' : 'Ready'}
+                            {product.isAvailable && product.stock > 0 ? 'Habis' : 'Ready'}
                           </button>
 
                           <button

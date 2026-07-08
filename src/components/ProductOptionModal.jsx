@@ -3,6 +3,7 @@ import { usePosStore } from '../store/posStore'
 
 function ProductOptionModal({ product, editingItem, onClose }) {
   const addToCart = usePosStore((state) => state.addToCart)
+  const cart = usePosStore((state) => state.cart)
   const updateCartItem = usePosStore((state) => state.updateCartItem)
   const addToast = usePosStore((state) => state.addToast)
 
@@ -49,6 +50,19 @@ function ProductOptionModal({ product, editingItem, onClose }) {
     return null
   }
 
+  const productStock = product.stock ?? 0
+
+  const currentCartQuantity = cart
+    .filter((item) => item.productId === product.id)
+    .reduce((total, item) => total + item.quantity, 0)
+
+  const editingQuantity = editingItem ? editingItem.quantity : 0
+
+  const remainingStock = Math.max(
+    0,
+    productStock - currentCartQuantity + editingQuantity
+  )
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -86,7 +100,7 @@ function ProductOptionModal({ product, editingItem, onClose }) {
   }
 
   const handleSubmit = () => {
-    if (!product.isAvailable) {
+    if (!product.isAvailable || productStock <= 0) {
       addToast({
         title: 'Produk habis',
         message: `${product.name} sedang tidak tersedia.`,
@@ -94,6 +108,15 @@ function ProductOptionModal({ product, editingItem, onClose }) {
       })
 
       onClose()
+      return
+    }
+    if (quantity > remainingStock) {
+      addToast({
+        title: 'Stok tidak cukup',
+        message: `Sisa stok ${product.name} hanya ${remainingStock}.`,
+        type: 'warning',
+      })
+
       return
     }
     const payload = {
@@ -295,7 +318,13 @@ function ProductOptionModal({ product, editingItem, onClose }) {
           </div>
 
           <div>
-            <p className="mb-3 font-bold text-[#2d1810]">Jumlah</p>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="font-bold text-[#2d1810]">Jumlah</p>
+
+              <p className="text-sm font-bold text-[#7b5d4a]">
+                Sisa stok: {remainingStock}
+              </p>
+            </div>
 
             <div className="flex items-center gap-3">
               <button
@@ -310,7 +339,9 @@ function ProductOptionModal({ product, editingItem, onClose }) {
               </span>
 
               <button
-                onClick={() => setQuantity((current) => current + 1)}
+                onClick={() =>
+                  setQuantity((current) => Math.min(remainingStock, current + 1))
+                }
                 className="h-11 w-11 rounded-full bg-[#6f3f24] text-xl font-bold text-white"
               >
                 +

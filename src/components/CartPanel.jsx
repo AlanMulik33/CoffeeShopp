@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { happyHourPromos } from '../data/happyHourPromos'
 import { vouchers } from '../data/vouchers'
 import { usePosStore } from '../store/posStore'
@@ -10,6 +11,7 @@ const paymentMethods = ['Tunai', 'QRIS', 'Kartu', 'GoPay', 'OVO', 'Dana']
 
 function CartPanel({ onEditItem }) {
   const cart = usePosStore((state) => state.cart)
+  const productCatalog = usePosStore((state) => state.productCatalog)
 
   const orderType = usePosStore((state) => state.orderType)
   const tableNumber = usePosStore((state) => state.tableNumber)
@@ -25,7 +27,6 @@ function CartPanel({ onEditItem }) {
   const promoError = usePosStore((state) => state.promoError)
 
   const lastOrder = usePosStore((state) => state.lastOrder)
-
   const orderHistory = usePosStore((state) => state.orderHistory)
   const openHistory = usePosStore((state) => state.openHistory)
 
@@ -49,45 +50,6 @@ function CartPanel({ onEditItem }) {
   const createTemporaryOrder = usePosStore((state) => state.createTemporaryOrder)
   const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
   const addToast = usePosStore((state) => state.addToast)
-
-  const handleRemoveItem = (item) => {
-    openConfirmDialog({
-      title: 'Hapus item?',
-      message: `${item.name} akan dihapus dari keranjang.`,
-      confirmText: 'Hapus',
-      cancelText: 'Batal',
-      variant: 'danger',
-      onConfirm: () => {
-        removeFromCart(item.cartKey)
-
-        addToast({
-          title: 'Item dihapus',
-          message: `${item.name} berhasil dihapus dari keranjang.`,
-          type: 'warning',
-        })
-      },
-    })
-  }
-
-  const handleClearCart = () => {
-    openConfirmDialog({
-      title: 'Kosongkan keranjang?',
-      message:
-        'Semua item, voucher, dan data pembayaran di keranjang saat ini akan dihapus.',
-      confirmText: 'Kosongkan',
-      cancelText: 'Batal',
-      variant: 'danger',
-      onConfirm: () => {
-        clearCart()
-
-        addToast({
-          title: 'Keranjang dikosongkan',
-          message: 'Semua item berhasil dihapus dari keranjang.',
-          type: 'warning',
-        })
-      },
-    })
-  }
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', {
@@ -146,8 +108,58 @@ function CartPanel({ onEditItem }) {
   const paymentValid =
     paymentMethod !== 'Tunai' || (cashPaidNumber > 0 && cashPaidNumber >= total)
 
+  const stockIssues = useMemo(() => {
+    const quantityMap = {}
+
+    cart.forEach((item) => {
+      if (!quantityMap[item.productId]) {
+        quantityMap[item.productId] = {
+          quantity: 0,
+          productName: item.name,
+        }
+      }
+
+      quantityMap[item.productId].quantity += item.quantity
+    })
+
+    return Object.entries(quantityMap)
+      .map(([productId, data]) => {
+        const product = productCatalog.find(
+          (item) => item.id === Number(productId)
+        )
+
+        if (!product) {
+          return {
+            productName: data.productName,
+            message: `${data.productName} sudah tidak ada di katalog produk.`,
+          }
+        }
+
+        const stock = product.stock ?? 0
+
+        if (!product.isAvailable || stock <= 0) {
+          return {
+            productName: product.name,
+            message: `${product.name} sedang habis.`,
+          }
+        }
+
+        if (data.quantity > stock) {
+          return {
+            productName: product.name,
+            message: `${product.name} hanya tersisa ${stock}, tapi keranjang berisi ${data.quantity}.`,
+          }
+        }
+
+        return null
+      })
+      .filter(Boolean)
+  }, [cart, productCatalog])
+
+  const hasStockIssue = stockIssues.length > 0
+
   const canCreateOrder =
-    cart.length > 0 && dineInValid && deliveryValid && paymentValid
+    cart.length > 0 && dineInValid && deliveryValid && paymentValid && !hasStockIssue
 
   const handleCashChange = (event) => {
     const onlyNumber = event.target.value.replace(/\D/g, '')
@@ -164,7 +176,95 @@ function CartPanel({ onEditItem }) {
     applyVoucher(foundVoucher, subtotal)
   }
 
+  const handleRemoveItem = (item) => {
+    openConfirmDialog({
+      title: 'Hapus item?',
+      message: `${item.name} akan dihapus dari keranjang.`,
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: () => {
+        removeFromCart(item.cartKey)
+
+        addToast({
+          title: 'Item dihapus',
+          message: `${item.name} berhasil dihapus dari keranjang.`,
+          type: 'warning',
+        })
+      },
+    })
+  }
+
+  const handleClearCart = () => {
+    openConfirmDialog({
+      title: 'Kosongkan keranjang?',
+      message:
+        'Semua item, voucher, dan data pembayaran di keranjang saat ini akan dihapus.',
+      confirmText: 'Kosongkan',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: () => {
+        clearCart()
+
+        addToast({
+          title: 'Keranjang dikosongkan',
+          message: 'Semua item berhasil dihapus dari keranjang.',
+          type: 'warning',
+        })
+      },
+    })
+  }
+
+  const handleIncreaseQuantity = (item) => {
+    const product = productCatalog.find((product) => product.id === item.productId)
+
+    if (!product) {
+      addToast({
+        title: 'Produk tidak ditemukan',
+        message: `${item.name} sudah tidak ada di katalog produk.`,
+        type: 'warning',
+      })
+      return
+    }
+
+    const totalQuantityInCart = cart
+      .filter((cartItem) => cartItem.productId === item.productId)
+      .reduce((total, cartItem) => total + cartItem.quantity, 0)
+
+    const stock = product.stock ?? 0
+
+    if (!product.isAvailable || stock <= 0) {
+      addToast({
+        title: 'Produk habis',
+        message: `${product.name} sedang tidak tersedia.`,
+        type: 'warning',
+      })
+      return
+    }
+
+    if (totalQuantityInCart >= stock) {
+      addToast({
+        title: 'Stok tidak cukup',
+        message: `Sisa stok ${product.name} hanya ${stock}.`,
+        type: 'warning',
+      })
+      return
+    }
+
+    increaseQuantity(item.cartKey)
+  }
+
   const handleCreateOrder = () => {
+    if (hasStockIssue) {
+      addToast({
+        title: 'Stok tidak cukup',
+        message: stockIssues[0]?.message || 'Ada produk yang stoknya tidak cukup.',
+        type: 'warning',
+      })
+
+      return
+    }
+
     if (!canCreateOrder) {
       return
     }
@@ -198,11 +298,12 @@ function CartPanel({ onEditItem }) {
 
         <div className="mt-1 flex items-center justify-between gap-3">
           <h2 className="text-3xl font-black text-[#2d1810]">Keranjang</h2>
+
           <button
             onClick={openHistory}
-            className="mt-4 w-full rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+            className="rounded-2xl border border-[#ead8c0] bg-[#fffaf3] px-4 py-3 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
           >
-            Riwayat Order ({orderHistory.length})
+            Riwayat ({orderHistory.length})
           </button>
 
           {lastOrder && (
@@ -531,19 +632,21 @@ function CartPanel({ onEditItem }) {
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => onEditItem(item)}
-                    className="rounded-full px-3 py-1 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      onClick={() => onEditItem(item)}
+                      className="rounded-full px-3 py-1 text-sm font-bold text-[#6f3f24] hover:bg-[#fff4e7]"
+                    >
+                      Edit
+                    </button>
 
-                  <button
-                    onClick={() => handleRemoveItem(item)}
-                    className="rounded-full px-3 py-1 text-sm font-bold text-red-500 hover:bg-red-50"
-                  >
-                    Hapus
-                  </button>
+                    <button
+                      onClick={() => handleRemoveItem(item)}
+                      className="rounded-full px-3 py-1 text-sm font-bold text-red-500 hover:bg-red-50"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-5 flex items-center justify-between">
@@ -560,7 +663,7 @@ function CartPanel({ onEditItem }) {
                     </span>
 
                     <button
-                      onClick={() => increaseQuantity(item.cartKey)}
+                      onClick={() => handleIncreaseQuantity(item)}
                       className="h-10 w-10 rounded-full bg-[#6f3f24] text-lg font-bold text-white"
                     >
                       +
@@ -610,6 +713,20 @@ function CartPanel({ onEditItem }) {
             </div>
           </div>
         </div>
+
+        {stockIssues.length > 0 && (
+          <div className="mt-4 rounded-2xl bg-red-50 p-4">
+            <p className="font-bold text-red-500">Stok tidak cukup</p>
+
+            <div className="mt-2 space-y-1">
+              {stockIssues.map((issue) => (
+                <p key={issue.productName} className="text-sm text-red-500">
+                  {issue.message}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button
           disabled={!canCreateOrder}

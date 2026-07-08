@@ -12,7 +12,7 @@ function ProductCard({ product, onSelect }) {
   }
 
   const handleClick = () => {
-    if (!product.isAvailable) {
+    if (!product.isAvailable && product.stock > 0 || product.stock <= 0) {
       addToast({
         title: 'Produk habis',
         message: `${product.name} sedang tidak tersedia.`,
@@ -29,12 +29,12 @@ function ProductCard({ product, onSelect }) {
     <button
       onClick={handleClick}
       className={`group relative rounded-3xl border border-[#ead8c0] bg-white p-4 text-left shadow-sm transition duration-300 ${
-        product.isAvailable
+        product.isAvailable && product.stock > 0
           ? 'hover:-translate-y-1 hover:shadow-xl'
           : 'cursor-not-allowed opacity-60'
       }`}
     >
-      {!product.isAvailable && (
+      {!product.isAvailable && product.stock > 0 && (
         <div className="absolute right-4 top-4 z-10 rounded-full bg-red-500 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg">
           Habis
         </div>
@@ -52,12 +52,12 @@ function ProductCard({ product, onSelect }) {
 
           <span
             className={`rounded-full px-3 py-1 text-xs font-bold ${
-              product.isAvailable
+              product.isAvailable && product.stock > 0 && product.stock > 0
                 ? 'bg-green-50 text-green-700'
                 : 'bg-red-50 text-red-500'
             }`}
           >
-            {product.isAvailable ? 'Tersedia' : 'Sold Out'}
+            {product.isAvailable && product.stock > 0 && product.stock > 0 ? `Stok ${product.stock}` : 'Sold Out'}
           </span>
         </div>
 
@@ -76,12 +76,12 @@ function ProductCard({ product, onSelect }) {
 
           <span
             className={`rounded-full px-4 py-2 text-sm font-bold transition ${
-              product.isAvailable
+              product.isAvailable && product.stock > 0
                 ? 'bg-[#2d1810] text-white group-hover:bg-[#b88746]'
                 : 'bg-[#c8b6a4] text-white'
             }`}
           >
-            {product.isAvailable ? 'Pilih' : 'Habis'}
+            {product.isAvailable && product.stock > 0 ? 'Pilih' : 'Habis'}
           </span>
         </div>
       </div>
