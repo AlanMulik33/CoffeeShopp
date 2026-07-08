@@ -106,8 +106,10 @@ export const usePosStore = create(
       kitchenOpen: false,
       productAdminOpen: false,
       stockReportOpen: false,
+      restockOpen: false,
 
       lowStockThreshold: 5,
+      restockHistory: [],
 
       productCatalog: normalizeProductStock(initialProducts),
 
@@ -209,6 +211,10 @@ export const usePosStore = create(
 
       closeStockReport: () => set({ stockReportOpen: false }),
 
+      openRestock: () => set({ restockOpen: true }),
+
+      closeRestock: () => set({ restockOpen: false }),
+
       setLowStockThreshold: (lowStockThreshold) =>
         set({
           lowStockThreshold: Math.max(1, Number(lowStockThreshold || 1)),
@@ -270,6 +276,72 @@ export const usePosStore = create(
             }
           }),
         })),
+
+      createRestockTransaction: (restockData) => {
+        const state = get()
+        const now = new Date()
+
+        const restockItems = restockData.items.map((item) => {
+          const product = state.productCatalog.find(
+            (product) => product.id === item.productId
+          )
+
+          const beforeStock = product?.stock ?? 0
+          const quantity = Math.max(1, Number(item.quantity || 1))
+          const unitCost = Math.max(0, Number(item.unitCost || 0))
+          const afterStock = beforeStock + quantity
+
+          return {
+            productId: item.productId,
+            productName: product?.name || item.productName,
+            category: product?.category || '-',
+            quantity,
+            unitCost,
+            totalCost: quantity * unitCost,
+            beforeStock,
+            afterStock,
+          }
+        })
+
+        const totalCost = restockItems.reduce((total, item) => {
+          return total + item.totalCost
+        }, 0)
+
+        const restockTransaction = {
+          restockId: crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`,
+          supplierName: restockData.supplierName,
+          note: restockData.note,
+          items: restockItems,
+          totalCost,
+          createdAt: now.toLocaleString('id-ID'),
+          createdAtISO: now.toISOString(),
+        }
+
+        const updatedProductCatalog = state.productCatalog.map((product) => {
+          const restockItem = restockItems.find(
+            (item) => item.productId === product.id
+          )
+
+          if (!restockItem) {
+            return product
+          }
+
+          return {
+            ...product,
+            stock: restockItem.afterStock,
+            isAvailable: restockItem.afterStock > 0,
+          }
+        })
+
+        set({
+          productCatalog: updatedProductCatalog,
+          restockHistory: [restockTransaction, ...state.restockHistory],
+        })
+
+        return restockTransaction
+      },
 
       deleteProduct: (productId) =>
         set((state) => ({
@@ -631,6 +703,7 @@ export const usePosStore = create(
 
         productCatalog: state.productCatalog,
         lowStockThreshold: state.lowStockThreshold,
+        restockHistory: state.restockHistory,
 
         orderType: state.orderType,
         tableNumber: state.tableNumber,
@@ -667,6 +740,7 @@ export const usePosStore = create(
         state.kitchenOpen = false
         state.productAdminOpen = false
         state.stockReportOpen = false
+        state.restockOpen = false
         state.confirmDialog = { ...defaultConfirmDialog }
         state.toasts = []
         state.promoError = ''
