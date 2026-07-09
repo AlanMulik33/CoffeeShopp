@@ -4,12 +4,19 @@ import { getTodayInputValue } from '../utils/dateFilter'
 import { products as initialProducts } from '../data/products'
 
 const normalizeProductStock = (products) => {
-  return products.map((product) => ({
-    ...product,
-    stock: product.stock ?? 20,
-    isAvailable:
-      product.stock === 0 ? false : product.isAvailable ?? true,
-  }))
+  return products.map((product) => {
+    const stock = product.stock ?? 20
+    const defaultAverageCost = Math.round((product.price || 0) * 0.45)
+    const averageCost = product.averageCost ?? defaultAverageCost
+
+    return {
+      ...product,
+      stock,
+      averageCost,
+      lastCost: product.lastCost ?? averageCost,
+      isAvailable: stock === 0 ? false : product.isAvailable ?? true,
+    }
+  })
 }
 
 const defaultConfirmDialog = {
@@ -223,11 +230,18 @@ export const usePosStore = create(
       addProduct: (product) =>
         set((state) => {
           const stock = Number(product.stock || 0)
+          const price = Number(product.price || 0)
+          const averageCost = Math.max(
+            0,
+            Number(product.averageCost ?? Math.round(price * 0.45))
+          )
 
           const newProduct = {
             ...product,
             id: Date.now(),
             stock,
+            averageCost,
+            lastCost: averageCost,
             isAvailable: stock > 0,
           }
 
@@ -291,6 +305,17 @@ export const usePosStore = create(
           const unitCost = Math.max(0, Number(item.unitCost || 0))
           const afterStock = beforeStock + quantity
 
+          const averageCostBefore =
+            product?.averageCost ?? Math.round((product?.price || 0) * 0.45)
+
+          const oldStockValue = beforeStock * averageCostBefore
+          const newStockValue = quantity * unitCost
+
+          const averageCostAfter =
+            afterStock > 0
+              ? Math.round((oldStockValue + newStockValue) / afterStock)
+              : unitCost
+
           return {
             productId: item.productId,
             productName: product?.name || item.productName,
@@ -300,6 +325,8 @@ export const usePosStore = create(
             totalCost: quantity * unitCost,
             beforeStock,
             afterStock,
+            averageCostBefore,
+            averageCostAfter,
           }
         })
 
@@ -331,6 +358,8 @@ export const usePosStore = create(
           return {
             ...product,
             stock: restockItem.afterStock,
+            averageCost: restockItem.averageCostAfter,
+            lastCost: restockItem.unitCost,
             isAvailable: restockItem.afterStock > 0,
           }
         })
@@ -620,6 +649,33 @@ export const usePosStore = create(
 
         const now = new Date()
 
+        const orderItems = state.cart.map((item) => {
+          const product = state.productCatalog.find(
+            (product) => product.id === item.productId
+          )
+
+          const costPrice =
+            product?.averageCost ?? Math.round((item.basePrice || item.price || 0) * 0.45)
+
+          const lineCost = costPrice * item.quantity
+
+          return {
+            ...item,
+            costPrice,
+            lineCost,
+          }
+        })
+
+        const costOfGoods = orderItems.reduce((total, item) => {
+          return total + (item.lineCost || 0)
+        }, 0)
+
+        const netSales = summary.taxableAmount
+        const grossProfit = netSales - costOfGoods
+
+        const grossMargin =
+          netSales > 0 ? Number(((grossProfit / netSales) * 100).toFixed(1)) : 0
+
         const newOrder = {
           orderId: crypto.randomUUID
             ? crypto.randomUUID()
@@ -632,7 +688,7 @@ export const usePosStore = create(
           customerName: state.customerName,
           customerPhone: state.customerPhone,
           deliveryAddress: state.deliveryAddress,
-          items: state.cart,
+          items: orderItems,
           subtotal: summary.subtotal,
           voucher: state.appliedVoucher,
           voucherDiscount: summary.voucherDiscount,
@@ -642,6 +698,12 @@ export const usePosStore = create(
           taxableAmount: summary.taxableAmount,
           tax: summary.tax,
           total: summary.total,
+
+          netSales,
+          costOfGoods,
+          grossProfit,
+          grossMargin,
+
           paymentMethod: state.paymentMethod,
           cashPaid: summary.cashPaid,
           change: summary.change,

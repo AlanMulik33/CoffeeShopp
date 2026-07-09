@@ -65,6 +65,27 @@ function DashboardModal() {
       return total + (order.total || 0)
     }, 0)
 
+    const netSales = filteredOrders.reduce((total, order) => {
+      return total + (order.netSales ?? order.taxableAmount ?? 0)
+    }, 0)
+
+    const totalCostOfGoods = filteredOrders.reduce((total, order) => {
+      if (typeof order.costOfGoods === 'number') {
+        return total + order.costOfGoods
+      }
+
+      const itemCost = order.items.reduce((itemTotal, item) => {
+        return itemTotal + (item.costPrice || 0) * item.quantity
+      }, 0)
+
+      return total + itemCost
+    }, 0)
+
+    const grossProfit = netSales - totalCostOfGoods
+
+    const grossMargin =
+      netSales > 0 ? Number(((grossProfit / netSales) * 100).toFixed(1)) : 0
+
     const totalDiscount = filteredOrders.reduce((total, order) => {
       return total + (order.discount || 0)
     }, 0)
@@ -185,6 +206,12 @@ function DashboardModal() {
     filteredOrders,
     totalTransactions,
     totalRevenue,
+
+    netSales,
+    totalCostOfGoods,
+    grossProfit,
+    grossMargin,
+
     totalDiscount,
     totalItems,
     averageTransaction,
@@ -322,6 +349,88 @@ function DashboardModal() {
                   ? `${dashboardData.topPayment.count} transaksi`
                   : 'Belum ada data'}
               </p>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-3xl border border-[#ead8c0] bg-[#fffaf3] p-5">
+            <div className="mb-5">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                Profit Summary
+              </p>
+
+              <h3 className="mt-1 text-xl font-black text-[#2d1810]">
+                Estimasi Laba Kotor
+              </h3>
+
+              <p className="mt-1 text-sm text-[#7b5d4a]">
+                Perhitungan sederhana dari penjualan bersih dikurangi modal produk.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="rounded-3xl border border-[#ead8c0] bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                  Penjualan Bersih
+                </p>
+
+                <p className="mt-3 text-2xl font-black text-[#2d1810]">
+                  {formatCurrency(dashboardData.netSales)}
+                </p>
+
+                <p className="mt-1 text-xs text-[#7b5d4a]">
+                  Setelah diskon, sebelum PPN
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-[#ead8c0] bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                  HPP / Modal
+                </p>
+
+                <p className="mt-3 text-2xl font-black text-red-500">
+                  {formatCurrency(dashboardData.totalCostOfGoods)}
+                </p>
+
+                <p className="mt-1 text-xs text-[#7b5d4a]">
+                  Modal produk terjual
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-[#ead8c0] bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                  Laba Kotor
+                </p>
+
+                <p
+                  className={`mt-3 text-2xl font-black ${
+                    dashboardData.grossProfit >= 0 ? 'text-green-700' : 'text-red-500'
+                  }`}
+                >
+                  {formatCurrency(dashboardData.grossProfit)}
+                </p>
+
+                <p className="mt-1 text-xs text-[#7b5d4a]">
+                  Belum termasuk biaya operasional
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-[#ead8c0] bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b88746]">
+                  Margin
+                </p>
+
+                <p
+                  className={`mt-3 text-4xl font-black ${
+                    dashboardData.grossMargin >= 0 ? 'text-[#2d1810]' : 'text-red-500'
+                  }`}
+                >
+                  {dashboardData.grossMargin}%
+                </p>
+
+                <p className="mt-1 text-xs text-[#7b5d4a]">
+                  Laba kotor / penjualan bersih
+                </p>
+              </div>
             </div>
           </div>
 

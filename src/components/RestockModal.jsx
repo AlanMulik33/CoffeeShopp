@@ -520,9 +520,10 @@ function RestockModal() {
 
                           <div className="text-sm text-[#7b5d4a]">
                             {transaction.items.map((item) => (
-                              <p key={item.productId}>
-                                {item.productName} +{item.quantity}
-                              </p>
+                            <p key={item.productId}>
+                                {item.productName} +{item.quantity} • Modal avg:{' '}
+                                {formatCurrency(item.averageCostAfter || item.unitCost)}
+                            </p>
                             ))}
                           </div>
                         </div>
