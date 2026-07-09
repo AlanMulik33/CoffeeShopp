@@ -96,6 +96,16 @@ export const usePosStore = create(
         set({
           currentUser: safeUser,
           loginError: '',
+
+          receiptOpen: false,
+          historyOpen: false,
+          dashboardOpen: false,
+          kitchenOpen: false,
+          productAdminOpen: false,
+          stockReportOpen: false,
+          restockOpen: false,
+
+          promoError: '',
         })
 
         return true
@@ -104,11 +114,23 @@ export const usePosStore = create(
       logoutUser: () =>
         set({
           currentUser: null,
+
           cart: [],
           promoCode: '',
           appliedVoucher: null,
           promoError: '',
           cashPaid: '',
+
+          receiptOpen: false,
+          historyOpen: false,
+          dashboardOpen: false,
+          kitchenOpen: false,
+          productAdminOpen: false,
+          stockReportOpen: false,
+          restockOpen: false,
+
+          confirmDialog: { ...defaultConfirmDialog },
+          toasts: [],
         }),
 
       clearLoginError: () =>

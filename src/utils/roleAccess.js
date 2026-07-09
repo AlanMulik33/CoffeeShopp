@@ -12,10 +12,24 @@ export const roleAccess = {
   barista: ['barista'],
 }
 
+export const featureLabels = {
+  pos: 'POS Kasir',
+  dashboard: 'Dashboard',
+  barista: 'Barista',
+  produk: 'Produk',
+  stok: 'Stok',
+  restock: 'Restock',
+  riwayat: 'Riwayat Order',
+}
+
 export const canAccessFeature = (user, feature) => {
   if (!user) {
     return false
   }
 
   return roleAccess[user.role]?.includes(feature) || false
+}
+
+export const getFeatureLabel = (feature) => {
+  return featureLabels[feature] || feature
 }

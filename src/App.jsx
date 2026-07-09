@@ -13,8 +13,8 @@ import ToastContainer from './components/ToastContainer'
 import DashboardModal from './components/DashboardModal'
 import KitchenDisplayModal from './components/KitchenDisplayModal'
 import LoginScreen from './components/LoginScreen'
-import { canAccessFeature } from './utils/roleAccess'
 import ActionMenu from './components/ActionMenu'
+import { canAccessFeature, getFeatureLabel } from './utils/roleAccess'
 import { usePosStore } from './store/posStore'
 
 function App() {
@@ -26,14 +26,24 @@ function App() {
   const currentUser = usePosStore((state) => state.currentUser)
   const logoutUser = usePosStore((state) => state.logoutUser)
 
-  const cart = usePosStore((state) => state.cart)
-  const products = usePosStore((state) => state.productCatalog)
+  const cart = usePosStore((state) => state.cart || [])
+  const products = usePosStore((state) => state.productCatalog || [])
 
   const receiptOpen = usePosStore((state) => state.receiptOpen)
   const historyOpen = usePosStore((state) => state.historyOpen)
+  const dashboardOpen = usePosStore((state) => state.dashboardOpen)
+  const kitchenOpen = usePosStore((state) => state.kitchenOpen)
+  const productAdminOpen = usePosStore((state) => state.productAdminOpen)
+  const stockReportOpen = usePosStore((state) => state.stockReportOpen)
+  const restockOpen = usePosStore((state) => state.restockOpen)
 
   const closeReceipt = usePosStore((state) => state.closeReceipt)
   const closeHistory = usePosStore((state) => state.closeHistory)
+  const closeDashboard = usePosStore((state) => state.closeDashboard)
+  const closeKitchen = usePosStore((state) => state.closeKitchen)
+  const closeProductAdmin = usePosStore((state) => state.closeProductAdmin)
+  const closeStockReport = usePosStore((state) => state.closeStockReport)
+  const closeRestock = usePosStore((state) => state.closeRestock)
 
   const openHistory = usePosStore((state) => state.openHistory)
   const openDashboard = usePosStore((state) => state.openDashboard)
@@ -48,6 +58,47 @@ function App() {
 
   const canAccess = (feature) => {
     return canAccessFeature(currentUser, feature)
+  }
+
+  const showAccessDenied = (feature) => {
+    addToast({
+      title: 'Akses ditolak',
+      message: `${getFeatureLabel(feature)} tidak tersedia untuk role ini.`,
+      type: 'warning',
+    })
+  }
+
+  const openProtectedFeature = (feature, openFeature) => {
+    if (!canAccess(feature)) {
+      showAccessDenied(feature)
+      return
+    }
+
+    openFeature()
+  }
+
+  const openHistoryProtected = () => {
+    openProtectedFeature('riwayat', openHistory)
+  }
+
+  const openDashboardProtected = () => {
+    openProtectedFeature('dashboard', openDashboard)
+  }
+
+  const openKitchenProtected = () => {
+    openProtectedFeature('barista', openKitchen)
+  }
+
+  const openProductAdminProtected = () => {
+    openProtectedFeature('produk', openProductAdmin)
+  }
+
+  const openStockReportProtected = () => {
+    openProtectedFeature('stok', openStockReport)
+  }
+
+  const openRestockProtected = () => {
+    openProtectedFeature('restock', openRestock)
   }
 
   const categories = useMemo(() => {
@@ -65,7 +116,7 @@ function App() {
       const matchSearch =
         product.name.toLowerCase().includes(keyword) ||
         product.category.toLowerCase().includes(keyword) ||
-        product.description.toLowerCase().includes(keyword)
+        (product.description || '').toLowerCase().includes(keyword)
 
       return matchCategory && matchSearch
     })
@@ -118,6 +169,72 @@ function App() {
   }
 
   useEffect(() => {
+    if (!currentUser) {
+      return
+    }
+
+    const protectedModals = [
+      {
+        feature: 'riwayat',
+        isOpen: historyOpen,
+        close: closeHistory,
+      },
+      {
+        feature: 'dashboard',
+        isOpen: dashboardOpen,
+        close: closeDashboard,
+      },
+      {
+        feature: 'barista',
+        isOpen: kitchenOpen,
+        close: closeKitchen,
+      },
+      {
+        feature: 'produk',
+        isOpen: productAdminOpen,
+        close: closeProductAdmin,
+      },
+      {
+        feature: 'stok',
+        isOpen: stockReportOpen,
+        close: closeStockReport,
+      },
+      {
+        feature: 'restock',
+        isOpen: restockOpen,
+        close: closeRestock,
+      },
+    ]
+
+    protectedModals.forEach((modal) => {
+      if (modal.isOpen && !canAccessFeature(currentUser, modal.feature)) {
+        modal.close()
+
+        addToast({
+          title: 'Akses ditolak',
+          message: `${getFeatureLabel(modal.feature)} tidak tersedia untuk role ini.`,
+          type: 'warning',
+        })
+      }
+    })
+  }, [
+    currentUser,
+    historyOpen,
+    dashboardOpen,
+    kitchenOpen,
+    productAdminOpen,
+    stockReportOpen,
+    restockOpen,
+    closeHistory,
+    closeDashboard,
+    closeKitchen,
+    closeProductAdmin,
+    closeStockReport,
+    closeRestock,
+    addToast,
+  ])
+
+  useEffect(() => {
     const handleKeyboardShortcut = (event) => {
       if (!currentUser) {
         return
@@ -137,6 +254,7 @@ function App() {
         event.preventDefault()
 
         if (!canAccessFeature(currentUser, 'pos')) {
+          showAccessDenied('pos')
           return
         }
 
@@ -165,65 +283,65 @@ function App() {
           closeHistory()
           return
         }
+
+        if (dashboardOpen) {
+          closeDashboard()
+          return
+        }
+
+        if (kitchenOpen) {
+          closeKitchen()
+          return
+        }
+
+        if (productAdminOpen) {
+          closeProductAdmin()
+          return
+        }
+
+        if (stockReportOpen) {
+          closeStockReport()
+          return
+        }
+
+        if (restockOpen) {
+          closeRestock()
+        }
       }
 
       if (event.key === 'F2') {
         event.preventDefault()
-
-        if (canAccessFeature(currentUser, 'riwayat')) {
-          openHistory()
-        }
-
+        openHistoryProtected()
         return
       }
 
       if (event.key === 'F3') {
         event.preventDefault()
-
-        if (canAccessFeature(currentUser, 'dashboard')) {
-          openDashboard()
-        }
-
+        openDashboardProtected()
         return
       }
 
       if (event.key === 'F4') {
         event.preventDefault()
-
-        if (canAccessFeature(currentUser, 'barista')) {
-          openKitchen()
-        }
-
+        openKitchenProtected()
         return
       }
 
       if (event.key === 'F5') {
         event.preventDefault()
-
-        if (canAccessFeature(currentUser, 'produk')) {
-          openProductAdmin()
-        }
-
+        openProductAdminProtected()
         return
       }
 
       if (event.key === 'F6') {
         event.preventDefault()
-
-        if (canAccessFeature(currentUser, 'stok')) {
-          openStockReport()
-        }
-
+        openStockReportProtected()
         return
       }
 
       if (event.key === 'F7') {
         event.preventDefault()
-
-        if (canAccessFeature(currentUser, 'restock')) {
-          openRestock()
-        }
-
+        openRestockProtected()
         return
       }
 
@@ -231,6 +349,7 @@ function App() {
         event.preventDefault()
 
         if (!canAccessFeature(currentUser, 'pos')) {
+          showAccessDenied('pos')
           return
         }
 
@@ -268,15 +387,25 @@ function App() {
     selectedProduct,
     receiptOpen,
     historyOpen,
+    dashboardOpen,
+    kitchenOpen,
+    productAdminOpen,
+    stockReportOpen,
+    restockOpen,
     cart.length,
     closeReceipt,
     closeHistory,
-    openDashboard,
-    openHistory,
-    openKitchen,
-    openProductAdmin,
-    openStockReport,
-    openRestock,
+    closeDashboard,
+    closeKitchen,
+    closeProductAdmin,
+    closeStockReport,
+    closeRestock,
+    openHistoryProtected,
+    openDashboardProtected,
+    openKitchenProtected,
+    openProductAdminProtected,
+    openStockReportProtected,
+    openRestockProtected,
     clearCart,
     openConfirmDialog,
     addToast,
@@ -315,12 +444,12 @@ function App() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <ActionMenu
                     canAccess={canAccess}
-                    onOpenDashboard={openDashboard}
-                    onOpenKitchen={openKitchen}
-                    onOpenProductAdmin={openProductAdmin}
-                    onOpenStockReport={openStockReport}
-                    onOpenRestock={openRestock}
-                    onOpenHistory={openHistory}
+                    onOpenDashboard={openDashboardProtected}
+                    onOpenKitchen={openKitchenProtected}
+                    onOpenProductAdmin={openProductAdminProtected}
+                    onOpenStockReport={openStockReportProtected}
+                    onOpenRestock={openRestockProtected}
+                    onOpenHistory={openHistoryProtected}
                   />
 
                   <ThemeToggle />
@@ -413,7 +542,7 @@ function App() {
 
                     {canAccess('barista') && (
                       <button
-                        onClick={openKitchen}
+                        onClick={openKitchenProtected}
                         className="mt-6 rounded-2xl bg-[#6f3f24] px-6 py-4 font-bold text-white hover:bg-[#4b2818]"
                       >
                         Buka Antrian Barista
