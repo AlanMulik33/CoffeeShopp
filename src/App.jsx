@@ -14,6 +14,7 @@ import DashboardModal from './components/DashboardModal'
 import KitchenDisplayModal from './components/KitchenDisplayModal'
 import LoginScreen from './components/LoginScreen'
 import { canAccessFeature } from './utils/roleAccess'
+import ActionMenu from './components/ActionMenu'
 import { usePosStore } from './store/posStore'
 
 function App() {
@@ -312,50 +313,15 @@ function App() {
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  {canAccess('dashboard') && (
-                    <button
-                      onClick={openDashboard}
-                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                    >
-                      📊 Dashboard
-                    </button>
-                  )}
-
-                  {canAccess('barista') && (
-                    <button
-                      onClick={openKitchen}
-                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                    >
-                      ☕ Barista
-                    </button>
-                  )}
-
-                  {canAccess('produk') && (
-                    <button
-                      onClick={openProductAdmin}
-                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                    >
-                      📦 Produk
-                    </button>
-                  )}
-
-                  {canAccess('stok') && (
-                    <button
-                      onClick={openStockReport}
-                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                    >
-                      📋 Stok
-                    </button>
-                  )}
-
-                  {canAccess('restock') && (
-                    <button
-                      onClick={openRestock}
-                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                    >
-                      🧾 Restock
-                    </button>
-                  )}
+                  <ActionMenu
+                    canAccess={canAccess}
+                    onOpenDashboard={openDashboard}
+                    onOpenKitchen={openKitchen}
+                    onOpenProductAdmin={openProductAdmin}
+                    onOpenStockReport={openStockReport}
+                    onOpenRestock={openRestock}
+                    onOpenHistory={openHistory}
+                  />
 
                   <ThemeToggle />
 
@@ -402,52 +368,6 @@ function App() {
                         {category}
                       </button>
                     ))}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 text-xs font-bold text-[#7b5d4a]">
-                    <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                      Ctrl + K: Cari Menu
-                    </span>
-
-                    <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                      Esc: Tutup Modal
-                    </span>
-
-                    {canAccess('riwayat') && (
-                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                        F2: Riwayat
-                      </span>
-                    )}
-
-                    {canAccess('dashboard') && (
-                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                        F3: Dashboard
-                      </span>
-                    )}
-
-                    {canAccess('barista') && (
-                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                        F4: Barista
-                      </span>
-                    )}
-
-                    {canAccess('produk') && (
-                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                        F5: Produk
-                      </span>
-                    )}
-
-                    {canAccess('stok') && (
-                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                        F6: Stok
-                      </span>
-                    )}
-
-                    {canAccess('restock') && (
-                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                        F7: Restock
-                      </span>
-                    )}
                   </div>
                 </div>
               )}
