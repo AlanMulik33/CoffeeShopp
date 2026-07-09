@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-// import { products } from './data/products'
 import ProductAdminModal from './components/ProductAdminModal'
 import StockReportModal from './components/StockReportModal'
 import RestockModal from './components/RestockModal'
@@ -13,6 +12,8 @@ import ConfirmDialog from './components/ConfirmDialog'
 import ToastContainer from './components/ToastContainer'
 import DashboardModal from './components/DashboardModal'
 import KitchenDisplayModal from './components/KitchenDisplayModal'
+import LoginScreen from './components/LoginScreen'
+import { canAccessFeature } from './utils/roleAccess'
 import { usePosStore } from './store/posStore'
 
 function App() {
@@ -21,38 +22,53 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
 
+  const currentUser = usePosStore((state) => state.currentUser)
+  const logoutUser = usePosStore((state) => state.logoutUser)
+
   const cart = usePosStore((state) => state.cart)
+  const products = usePosStore((state) => state.productCatalog)
+
   const receiptOpen = usePosStore((state) => state.receiptOpen)
   const historyOpen = usePosStore((state) => state.historyOpen)
 
   const closeReceipt = usePosStore((state) => state.closeReceipt)
   const closeHistory = usePosStore((state) => state.closeHistory)
+
   const openHistory = usePosStore((state) => state.openHistory)
   const openDashboard = usePosStore((state) => state.openDashboard)
   const openKitchen = usePosStore((state) => state.openKitchen)
   const openProductAdmin = usePosStore((state) => state.openProductAdmin)
   const openStockReport = usePosStore((state) => state.openStockReport)
   const openRestock = usePosStore((state) => state.openRestock)
-  const products = usePosStore((state) => state.productCatalog)
+
   const clearCart = usePosStore((state) => state.clearCart)
   const openConfirmDialog = usePosStore((state) => state.openConfirmDialog)
   const addToast = usePosStore((state) => state.addToast)
 
+  const canAccess = (feature) => {
+    return canAccessFeature(currentUser, feature)
+  }
+
   const categories = useMemo(() => {
     const uniqueCategories = products.map((product) => product.category)
     return ['Semua', ...new Set(uniqueCategories)]
-  }, [])
+  }, [products])
 
-  const filteredProducts = products.filter((product) => {
-    const matchCategory =
-      selectedCategory === 'Semua' || product.category === selectedCategory
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchCategory =
+        selectedCategory === 'Semua' || product.category === selectedCategory
 
-    const matchSearch = product.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
+      const keyword = searchTerm.toLowerCase()
 
-    return matchCategory && matchSearch
-  })
+      const matchSearch =
+        product.name.toLowerCase().includes(keyword) ||
+        product.category.toLowerCase().includes(keyword) ||
+        product.description.toLowerCase().includes(keyword)
+
+      return matchCategory && matchSearch
+    })
+  }, [products, selectedCategory, searchTerm])
 
   const handleSelectProduct = (product) => {
     setEditingItem(null)
@@ -63,6 +79,12 @@ function App() {
     const product = products.find((product) => product.id === item.productId)
 
     if (!product) {
+      addToast({
+        title: 'Produk tidak ditemukan',
+        message: `${item.name} sudah tidak ada di katalog produk.`,
+        type: 'warning',
+      })
+
       return
     }
 
@@ -75,8 +97,31 @@ function App() {
     setEditingItem(null)
   }
 
+  const handleLogout = () => {
+    openConfirmDialog({
+      title: 'Keluar dari akun?',
+      message: 'Keranjang saat ini akan dikosongkan ketika logout.',
+      confirmText: 'Keluar',
+      cancelText: 'Batal',
+      variant: 'danger',
+      onConfirm: () => {
+        logoutUser()
+
+        addToast({
+          title: 'Logout berhasil',
+          message: 'Kamu sudah keluar dari sistem.',
+          type: 'success',
+        })
+      },
+    })
+  }
+
   useEffect(() => {
     const handleKeyboardShortcut = (event) => {
+      if (!currentUser) {
+        return
+      }
+
       const activeElement = document.activeElement
       const activeTag = activeElement?.tagName?.toLowerCase()
 
@@ -89,6 +134,10 @@ function App() {
 
       if (isCtrlOrCommand && event.key.toLowerCase() === 'k') {
         event.preventDefault()
+
+        if (!canAccessFeature(currentUser, 'pos')) {
+          return
+        }
 
         const searchInput = document.getElementById('menu-search-input')
 
@@ -119,64 +168,92 @@ function App() {
 
       if (event.key === 'F2') {
         event.preventDefault()
-        openHistory()
+
+        if (canAccessFeature(currentUser, 'riwayat')) {
+          openHistory()
+        }
+
         return
       }
 
       if (event.key === 'F3') {
         event.preventDefault()
-        openDashboard()
+
+        if (canAccessFeature(currentUser, 'dashboard')) {
+          openDashboard()
+        }
+
         return
       }
 
       if (event.key === 'F4') {
         event.preventDefault()
-        openKitchen()
+
+        if (canAccessFeature(currentUser, 'barista')) {
+          openKitchen()
+        }
+
         return
       }
 
       if (event.key === 'F5') {
         event.preventDefault()
-        openProductAdmin()
+
+        if (canAccessFeature(currentUser, 'produk')) {
+          openProductAdmin()
+        }
+
         return
       }
 
       if (event.key === 'F6') {
         event.preventDefault()
-        openStockReport()
+
+        if (canAccessFeature(currentUser, 'stok')) {
+          openStockReport()
+        }
+
         return
       }
 
-      if (event.key === 'F6') {
+      if (event.key === 'F7') {
         event.preventDefault()
-        openStockReport()
+
+        if (canAccessFeature(currentUser, 'restock')) {
+          openRestock()
+        }
+
         return
       }
 
       if (isCtrlOrCommand && event.key === 'Backspace' && !isTyping) {
         event.preventDefault()
 
+        if (!canAccessFeature(currentUser, 'pos')) {
+          return
+        }
+
         if (cart.length === 0) {
           return
         }
 
-      openConfirmDialog({
-        title: 'Kosongkan keranjang?',
-        message:
-          'Semua item yang sudah masuk ke keranjang akan dihapus. Aksi ini tidak bisa dibatalkan.',
-        confirmText: 'Kosongkan',
-        cancelText: 'Batal',
-        variant: 'danger',
-        onConfirm: () => {
-          clearCart()
+        openConfirmDialog({
+          title: 'Kosongkan keranjang?',
+          message:
+            'Semua item yang sudah masuk ke keranjang akan dihapus. Aksi ini tidak bisa dibatalkan.',
+          confirmText: 'Kosongkan',
+          cancelText: 'Batal',
+          variant: 'danger',
+          onConfirm: () => {
+            clearCart()
 
-          addToast({
-            title: 'Keranjang dikosongkan',
-            message: 'Semua item berhasil dihapus dari keranjang.',
-            type: 'warning',
-          })
-        },
-      })
+            addToast({
+              title: 'Keranjang dikosongkan',
+              message: 'Semua item berhasil dihapus dari keranjang.',
+              type: 'warning',
+            })
+          },
+        })
       }
     }
 
@@ -185,23 +262,33 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyboardShortcut)
     }
-}, [
-  selectedProduct,
-  receiptOpen,
-  historyOpen,
-  cart.length,
-  closeReceipt,
-  closeHistory,
-  openDashboard,
-  openHistory,
-  clearCart,
-  openConfirmDialog,
-  addToast,
-  openKitchen,
-  openProductAdmin,
-  openStockReport,
-  openRestock,
-])
+  }, [
+    currentUser,
+    selectedProduct,
+    receiptOpen,
+    historyOpen,
+    cart.length,
+    closeReceipt,
+    closeHistory,
+    openDashboard,
+    openHistory,
+    openKitchen,
+    openProductAdmin,
+    openStockReport,
+    openRestock,
+    clearCart,
+    openConfirmDialog,
+    addToast,
+  ])
+
+  if (!currentUser) {
+    return (
+      <>
+        <LoginScreen />
+        <ToastContainer />
+      </>
+    )
+  }
 
   return (
     <>
@@ -219,153 +306,210 @@ function App() {
                     Warm Brew Cashier
                   </h1>
                   <p className="mt-2 text-[#7b5d4a]">
-                    Pilih menu kopi, makanan, atau non-coffee untuk menambahkan pesanan.
+                    Pilih menu kopi, makanan, atau non-coffee untuk menambahkan
+                    pesanan.
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <button
-                    onClick={openDashboard}
-                    className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                  >
-                    📊 Dashboard
-                  </button>
+                  {canAccess('dashboard') && (
+                    <button
+                      onClick={openDashboard}
+                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
+                    >
+                      📊 Dashboard
+                    </button>
+                  )}
 
-                  <button
-                    onClick={openKitchen}
-                    className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                  >
-                    ☕ Barista
-                  </button>
+                  {canAccess('barista') && (
+                    <button
+                      onClick={openKitchen}
+                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
+                    >
+                      ☕ Barista
+                    </button>
+                  )}
 
-                  <button
-                    onClick={openProductAdmin}
-                    className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                  >
-                    📦 Produk
-                  </button>
+                  {canAccess('produk') && (
+                    <button
+                      onClick={openProductAdmin}
+                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
+                    >
+                      📦 Produk
+                    </button>
+                  )}
 
-                  <button
-                    onClick={openStockReport}
-                    className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                  >
-                    📦 Stok
-                  </button>
+                  {canAccess('stok') && (
+                    <button
+                      onClick={openStockReport}
+                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
+                    >
+                      📋 Stok
+                    </button>
+                  )}
 
-                  <button
-                    onClick={openRestock}
-                    className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
-                  >
-                    🧾 Restock
-                  </button>
+                  {canAccess('restock') && (
+                    <button
+                      onClick={openRestock}
+                      className="rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-sm font-bold text-[#6f3f24] shadow-sm transition hover:bg-[#fff4e7]"
+                    >
+                      🧾 Restock
+                    </button>
+                  )}
 
                   <ThemeToggle />
 
-                  <div className="rounded-2xl bg-[#2d1810] px-5 py-3 text-white">
-                    <p className="text-xs uppercase tracking-widest text-[#d8b98f]">
-                      Kasir
-                    </p>
-                    <p className="font-bold">Agus</p>
+                  <div className="flex items-center gap-3 rounded-2xl bg-[#2d1810] px-5 py-3 text-white">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-[#d8b98f]">
+                        {currentUser.roleLabel}
+                      </p>
+                      <p className="font-bold">{currentUser.name}</p>
+                    </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-[#f8ead8] hover:bg-white/20"
+                    >
+                      Keluar
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-4">
-                <input
-                  id="menu-search-input"
-                  type="text"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Cari menu, contoh: latte, espresso, croissant..."
-                  className="w-full rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-[#2d1810] outline-none transition focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
-                />
+              {canAccess('pos') && (
+                <div className="mt-6 flex flex-col gap-4">
+                  <input
+                    id="menu-search-input"
+                    type="text"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Cari menu, contoh: latte, espresso, croissant..."
+                    className="w-full rounded-2xl border border-[#ead8c0] bg-white px-5 py-3 text-[#2d1810] outline-none transition focus:border-[#b88746] focus:ring-4 focus:ring-[#ead8c0]"
+                  />
 
-                <div className="coffee-scrollbar flex gap-3 overflow-x-auto pb-1">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold transition ${
-                        selectedCategory === category
-                          ? 'bg-[#2d1810] text-white'
-                          : 'bg-white text-[#7b5d4a] hover:bg-[#ead8c0]'
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
+                  <div className="coffee-scrollbar flex gap-3 overflow-x-auto pb-1">
+                    {categories.map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`shrink-0 rounded-full px-5 py-3 text-sm font-bold transition ${
+                          selectedCategory === category
+                            ? 'bg-[#2d1810] text-white'
+                            : 'bg-white text-[#7b5d4a] hover:bg-[#ead8c0]'
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 text-xs font-bold text-[#7b5d4a]">
+                    <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                      Ctrl + K: Cari Menu
+                    </span>
+
+                    <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                      Esc: Tutup Modal
+                    </span>
+
+                    {canAccess('riwayat') && (
+                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                        F2: Riwayat
+                      </span>
+                    )}
+
+                    {canAccess('dashboard') && (
+                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                        F3: Dashboard
+                      </span>
+                    )}
+
+                    {canAccess('barista') && (
+                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                        F4: Barista
+                      </span>
+                    )}
+
+                    {canAccess('produk') && (
+                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                        F5: Produk
+                      </span>
+                    )}
+
+                    {canAccess('stok') && (
+                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                        F6: Stok
+                      </span>
+                    )}
+
+                    {canAccess('restock') && (
+                      <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
+                        F7: Restock
+                      </span>
+                    )}
+                  </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2 text-xs font-bold text-[#7b5d4a]">
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    Ctrl + K: Cari Menu
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    Esc: Tutup Modal
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    F2: Riwayat Order
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    F3: Dashboard
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    F4: Barista
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    F5: Produk
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    F6: Stok
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    F7: Restock
-                  </span>
-
-                  <span className="rounded-full border border-[#ead8c0] bg-white px-3 py-2">
-                    Ctrl + Backspace: Kosongkan Keranjang
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="coffee-scrollbar min-h-0 flex-1 overflow-y-auto p-6 pb-24">
-              {filteredProducts.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center text-center">
-                  <div className="text-6xl">🔎</div>
+              {canAccess('pos') ? (
+                filteredProducts.length === 0 ? (
+                  <div className="flex h-full flex-col items-center justify-center text-center">
+                    <div className="text-6xl">🔎</div>
 
-                  <h3 className="mt-4 text-xl font-bold text-[#2d1810]">
-                    Menu tidak ditemukan
-                  </h3>
+                    <h3 className="mt-4 text-xl font-bold text-[#2d1810]">
+                      Menu tidak ditemukan
+                    </h3>
 
-                  <p className="mt-2 text-sm text-[#7b5d4a]">
-                    Coba gunakan kata kunci lain atau pilih kategori berbeda.
-                  </p>
-                </div>
+                    <p className="mt-2 text-sm text-[#7b5d4a]">
+                      Coba gunakan kata kunci lain atau pilih kategori berbeda.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {filteredProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onSelect={handleSelectProduct}
+                      />
+                    ))}
+                  </div>
+                )
               ) : (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                  {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onSelect={handleSelectProduct}
-                  />
-                  ))}
+                <div className="flex h-full items-center justify-center">
+                  <div className="max-w-lg rounded-3xl border border-[#ead8c0] bg-white p-10 text-center">
+                    <div className="text-6xl">☕</div>
+
+                    <h3 className="mt-4 text-3xl font-black text-[#2d1810]">
+                      Mode {currentUser.roleLabel}
+                    </h3>
+
+                    <p className="mt-2 text-[#7b5d4a]">
+                      Akun ini tidak memiliki akses ke halaman POS kasir.
+                    </p>
+
+                    {canAccess('barista') && (
+                      <button
+                        onClick={openKitchen}
+                        className="mt-6 rounded-2xl bg-[#6f3f24] px-6 py-4 font-bold text-white hover:bg-[#4b2818]"
+                      >
+                        Buka Antrian Barista
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </section>
 
-          <section className="lg:w-[460px] lg:min-h-0">
-            <CartPanel onEditItem={handleEditItem} />
-          </section>
+          {canAccess('pos') && (
+            <section className="lg:w-[460px] lg:min-h-0">
+              <CartPanel onEditItem={handleEditItem} />
+            </section>
+          )}
         </div>
       </main>
 
@@ -376,21 +520,13 @@ function App() {
       />
 
       <ReceiptModal />
-
       <OrderHistoryModal />
-
       <ConfirmDialog />
-
       <ToastContainer />
-
       <DashboardModal />
-
       <KitchenDisplayModal />
-
       <ProductAdminModal />
-
       <StockReportModal />
-
       <RestockModal />
     </>
   )

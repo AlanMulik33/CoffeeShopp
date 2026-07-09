@@ -19,6 +19,33 @@ const normalizeProductStock = (products) => {
   })
 }
 
+const demoUsers = [
+  {
+    id: 1,
+    name: 'Agus',
+    username: 'admin',
+    password: 'admin123',
+    role: 'admin',
+    roleLabel: 'Admin',
+  },
+  {
+    id: 2,
+    name: 'Kasir',
+    username: 'kasir',
+    password: 'kasir123',
+    role: 'kasir',
+    roleLabel: 'Kasir',
+  },
+  {
+    id: 3,
+    name: 'Barista',
+    username: 'barista',
+    password: 'barista123',
+    role: 'barista',
+    roleLabel: 'Barista',
+  },
+]
+
 const defaultConfirmDialog = {
   isOpen: false,
   title: '',
@@ -34,7 +61,60 @@ export const usePosStore = create(
     (set, get) => ({
       cart: [],
 
+      currentUser: null,
+      loginError: '',
+
       theme: localStorage.getItem('coffee-pos-theme') || 'light',
+
+      loginUser: (username, password) => {
+        const normalizedUsername = username.trim().toLowerCase()
+
+        const foundUser = demoUsers.find((user) => {
+          return (
+            user.username === normalizedUsername &&
+            user.password === password
+          )
+        })
+
+        if (!foundUser) {
+          set({
+            currentUser: null,
+            loginError: 'Username atau password salah.',
+          })
+
+          return false
+        }
+
+        const safeUser = {
+          id: foundUser.id,
+          name: foundUser.name,
+          username: foundUser.username,
+          role: foundUser.role,
+          roleLabel: foundUser.roleLabel,
+        }
+
+        set({
+          currentUser: safeUser,
+          loginError: '',
+        })
+
+        return true
+      },
+
+      logoutUser: () =>
+        set({
+          currentUser: null,
+          cart: [],
+          promoCode: '',
+          appliedVoucher: null,
+          promoError: '',
+          cashPaid: '',
+        }),
+
+      clearLoginError: () =>
+        set({
+          loginError: '',
+        }),
 
       toggleTheme: () =>
         set((state) => {
@@ -760,6 +840,8 @@ export const usePosStore = create(
       name: 'coffee-pos-storage',
 
       partialize: (state) => ({
+        currentUser: state.currentUser,
+
         cart: state.cart,
         theme: state.theme,
 
@@ -806,6 +888,7 @@ export const usePosStore = create(
         state.confirmDialog = { ...defaultConfirmDialog }
         state.toasts = []
         state.promoError = ''
+        state.loginError = ''
       },
     }
   )
